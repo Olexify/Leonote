@@ -1,0 +1,19 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "mini",
+  "description": "The always-on-top mini player: it listens for the player's state, sends back button presses, and can be dragged and closed",
+  "windows": [
+    "mini",
+    "ytmini",
+    "breakpop"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-start-resize-dragging",
+    "core:window:allow-set-size",
+    "core:window:allow-close",
+    "core:window:allow-destroy",
+    "window-state:default"
+  ]
+}

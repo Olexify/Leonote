@@ -1,0 +1,279 @@
+/* tab groups and tab colours (tabgroups.js) */
+
+/* Eight hues, a touch deeper in the light theme so they hold on white.
+   Everything else is mixed from these and the theme's own colours. */
+:root {
+  --tg-grey: #9b9ba4;
+  --tg-blue: #6e9ef5;
+  --tg-teal: #4ec0b5;
+  --tg-green: #70c483;
+  --tg-yellow: #e2c15c;
+  --tg-orange: #ec9859;
+  --tg-red: #ec7470;
+  --tg-purple: #ab8ef1;
+}
+:root[data-theme="light"] {
+  --tg-grey: #787882;
+  --tg-blue: #3a76e4;
+  --tg-teal: #16998d;
+  --tg-green: #2e9a4d;
+  --tg-yellow: #b98f0c;
+  --tg-orange: #d97326;
+  --tg-red: #d6463e;
+  --tg-purple: #855fdc;
+}
+
+/* ── a tab's own colour ────────────────────────────────────────────────
+   The colour shows through effects that are switched on one by one in the
+   tab's Customize (fx-*): icon glow and coloured text by default. A border
+   is its own switch - an outlined tab is easily read as "the active one". */
+.tab.has-color.is-active { background: color-mix(in srgb, var(--tc) 9%, var(--surface-2)); }
+.tab.fx-glow > .ico:first-child { color: var(--tc); opacity: 1; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--tc) 70%, transparent)); }
+.tab.fx-text .tab-title { color: color-mix(in srgb, var(--tc) 78%, var(--text)); }
+.tab.fx-text > .ico { color: var(--tc); opacity: 1; }
+.tab.fx-tint { background: color-mix(in srgb, var(--tc) 15%, transparent); }
+.tab.fx-tint.is-active { background: color-mix(in srgb, var(--tc) 26%, var(--surface-2)); }
+.tab.fx-fill { background: color-mix(in srgb, var(--tc) 38%, var(--bg-2)); }
+.tab.fx-fill.is-active { background: color-mix(in srgb, var(--tc) 62%, var(--bg-2)); }
+.tab.fx-fill .tab-title, .tab.fx-fill:not(.fx-glow) > .ico { color: var(--text); }
+.tab.fx-border { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 55%, transparent); }
+/* a dashed line under the name - never the solid bar, which is the active tab's */
+.tab.fx-dash::before {
+  content: ""; position: absolute; left: 10px; right: 10px; bottom: 2px; height: 2px; pointer-events: none;
+  background: repeating-linear-gradient(90deg, var(--tc) 0 5px, transparent 5px 9px); opacity: .9;
+}
+.tab.fx-dash.is-active::before { opacity: 0; }
+.tab.is-pinned.fx-dash::before { left: 9px; right: 9px; }
+/* a dot at the tab's corner */
+.tab.fx-dot:not(.is-stuck)::after { content: ""; position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--tc); box-shadow: 0 0 5px color-mix(in srgb, var(--tc) 70%, transparent); pointer-events: none; }
+.tab.fx-dot:not(.is-stuck):hover::after { opacity: 0; }
+
+/* A pinned tab keeps its name and stays in view: it sticks at the left and the
+   other tabs slide under it. (A minimized tab is the icon-only one.) */
+.tab.is-stuck { container-type: normal; position: sticky; z-index: 3; flex: none; width: 24px !important; min-width: 24px !important; height: 24px; padding: 0; justify-content: center; border-radius: 8px; background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--line), 8px 0 8px -6px rgba(0, 0, 0, .45); }
+.tab.is-stuck.is-active { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--accent-soft), 8px 0 8px -6px rgba(0, 0, 0, .45); }
+.tab.is-stuck > .ico { width: 13px; height: 13px; margin: 0 auto; color: var(--accent); opacity: .95; }
+.tab.is-stuck.has-color > .ico { color: var(--tc); }
+/* the pin's mark: a small dot at the corner */
+.tab.is-stuck::after { content: ""; position: absolute; top: 2px; right: 2px; width: 4px; height: 4px; border-radius: 50%; background: var(--tc, var(--accent)); }
+.tab.is-stuck.has-color::before { display: none; }
+/* the look a tab was given in Customize */
+.tab.is-bold .tab-title { font-weight: 650; }
+.tab.is-italic .tab-title { font-style: italic; }
+.tab.is-dim:not(.is-active):not(:hover) { opacity: .5; }
+.tab.is-caps .tab-title { font-variant-caps: all-small-caps; letter-spacing: .04em; }
+.tab.is-size-s .tab-title { font-size: 11px; }
+.tab.is-size-l .tab-title { font-size: 14.5px; }
+
+.tab-cust { width: 318px; padding: 12px; display: grid; gap: 10px; }
+.tab-cust-head { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+.tab-cust-head span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-cust-label { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-4); margin-bottom: -4px; }
+.tab-cust-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tab-cust-hex { width: 84px; height: 26px; padding: 0 8px; border-radius: 7px; background: var(--bg-2); color: var(--text); font: 12px var(--mono, monospace); box-shadow: inset 0 0 0 1px var(--line); }
+.tab-cust-any { width: 28px; height: 26px; padding: 0; border: 0; border-radius: 7px; background: none; cursor: pointer; }
+.tab-cust-icons { display: grid; grid-template-columns: repeat(9, 1fr); gap: 3px; }
+.tab-cust-icons button { height: 26px; display: grid; place-items: center; border-radius: 7px; color: var(--text-3); }
+.tab-cust-icons button:hover { background: var(--hover); color: var(--text); }
+.tab-cust-icons button.is-active { background: var(--accent-wash); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent-soft); }
+.tab-cust-icons .ico { width: 14px; height: 14px; }
+.tab-cust-toggle { height: 26px; min-width: 32px; padding: 0 9px; border-radius: 7px; color: var(--text-2); box-shadow: inset 0 0 0 1px var(--line); }
+.tab-cust-toggle.is-active { background: var(--accent-wash); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent-soft); }
+.tabs.is-panning, .tabs.is-panning * { cursor: ew-resize !important; }
+
+
+/* ── a group: its chip, then its tabs, underlined in the group colour ── */
+.tg {
+  display: flex; align-items: center; gap: 3px; height: 100%; flex: 0 1 auto; min-width: min-content;
+  position: relative; padding: 0 1px;
+}
+.tg::after {
+  content: ""; position: absolute; left: 3px; right: 1px; bottom: 2px; height: 2px; border-radius: 2px;
+  background: color-mix(in srgb, var(--gc) 70%, transparent); pointer-events: none;
+}
+.tg.is-collapsed::after { display: none; }
+/* A fixed tab width would count as the group's smallest size, so tabs in a
+   group size by their flex basis instead, and the group asks for what its
+   --n tabs would take loose: grouped and loose tabs shrink alike. */
+.tg > .tab { width: auto; }
+.tg:not(.is-collapsed) { flex: 0 1 calc(var(--n) * 193px + 28px); }
+.tg.is-collapsed { flex: none; }
+@keyframes tg-line { from { transform: scaleX(0.6); opacity: 0; transform-origin: left; } }
+
+.tg-chip {
+  display: flex; align-items: center; gap: 6px; flex: none; min-width: 22px; max-width: 132px; height: 22px;
+  padding: 0 9px; border-radius: 7px; cursor: default; user-select: none;
+  background: color-mix(in srgb, var(--gc) 17%, transparent);
+  color: color-mix(in srgb, var(--gc) 58%, var(--text));
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.01em;
+  transition: background 0.12s, box-shadow 0.12s, padding 0.16s var(--ease);
+}
+.tg-chip:hover { background: color-mix(in srgb, var(--gc) 26%, transparent); }
+@keyframes tg-in { from { opacity: 0; transform: scale(0.85); } }
+.tg-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--gc); }
+.tg-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* named and open: the tinted name says it all */
+.tg-chip:not(.is-bare):not(.is-collapsed) .tg-dot { display: none; }
+.tg-chip.is-bare:not(.is-collapsed) { width: 22px; padding: 0; justify-content: center; }
+.tg-count {
+  font-size: 10.5px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1;
+  color: color-mix(in srgb, var(--gc) 45%, var(--text-2));
+}
+
+/* collapsed: small, a dot and a count */
+.tg-chip.is-collapsed { height: 22px; padding: 0 7px 0 8px; gap: 5px; background: color-mix(in srgb, var(--gc) 13%, transparent); }
+.tg-chip.is-collapsed:hover { background: color-mix(in srgb, var(--gc) 24%, transparent); }
+.tg-chip.is-collapsed.is-bare { max-width: 44px; }
+
+/* ── dragging ──────────────────────────────────────────────────────────── */
+.tab.is-dragging, .tg.is-dragging { opacity: 0.45; }
+/* the insertion line sits in the 3px gap between tabs */
+.tab.is-drop-before::after, .tab.is-drop-after::after, .tg.is-drop-before::before, .tg.is-drop-after::before {
+  content: ""; position: absolute; top: 5px; bottom: 5px; width: 2px; border-radius: 2px;
+  background: var(--accent); pointer-events: none;
+}
+.tab.is-drop-before::after { left: -2.5px; }
+.tab.is-drop-after::after { right: -2.5px; }
+.tg.is-drop-before::before { left: -2px; top: 9px; bottom: 9px; }
+.tg.is-drop-after::before { right: -2px; top: 9px; bottom: 9px; }
+.tg-chip.is-drop-into { box-shadow: 0 0 0 1.5px var(--accent); }
+
+/* drop-and-hold: after the pause the target says it will group */
+.tab.is-group-target {
+  outline: 1.5px dashed color-mix(in srgb, var(--accent) 85%, transparent); outline-offset: -1.5px;
+  background: var(--accent-wash);
+}
+.tab.is-group-target::after {
+  content: "Group"; position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  max-width: calc(100% - 8px); overflow: hidden; padding: 2px 7px; border-radius: 6px;
+  background: var(--accent); color: var(--accent-fg); font-size: 10.5px; font-weight: 650; line-height: 1.3;
+  pointer-events: none; animation: tg-hint 0.16s var(--ease);
+}
+.tab.is-group-target .tab-close { visibility: hidden; }
+@keyframes tg-hint { from { opacity: 0; transform: translateY(-50%) scale(0.9); } }
+
+/* ── popovers: group editor, tab colour, group peek ────────────────────── */
+.tg-pop {
+  position: fixed; z-index: 78; padding: 8px; border-radius: 11px; background: var(--surface-2); box-shadow: var(--shadow-lg);
+  opacity: 0; transform: translateY(-3px) scale(0.98); transform-origin: top left;
+  transition: opacity 0.1s, transform 0.14s var(--ease);
+}
+.tg-pop.is-in { opacity: 1; transform: none; }
+.tg-pop-head { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-4); padding: 1px 2px 7px; }
+
+.tg-editor { width: 232px; }
+.tg-name {
+  width: 100%; height: 30px; padding: 0 9px; border-radius: 7px; font: inherit; font-size: 13px;
+  color: var(--text); background: var(--hover); border: 1px solid var(--line-strong); outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.tg-name::placeholder { color: var(--text-4); }
+.tg-name:focus { border-color: color-mix(in srgb, var(--accent) 55%, transparent); box-shadow: 0 0 0 3px var(--accent-wash); }
+.tg-name:focus-visible { outline: none; }
+
+.tg-swatches { display: flex; justify-content: space-between; gap: 4px; margin-top: 9px; padding: 0 1px; }
+.tg-colors .tg-swatches { margin-top: 0; gap: 6px; }
+.tg-swatch {
+  width: 20px; height: 20px; flex: none; justify-content: center; border-radius: 50%;
+  background: var(--c); transition: box-shadow 0.12s, transform 0.12s var(--ease);
+}
+.tg-swatch:hover { transform: scale(1.1); }
+.tg-swatch.is-active { box-shadow: 0 0 0 2px var(--surface-2), 0 0 0 3.5px var(--c); }
+.tg-swatch.is-none { background: var(--hover); color: var(--text-3); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.tg-swatch.is-none .ico { width: 11px; height: 11px; }
+.tg-swatch.is-none.is-active { box-shadow: inset 0 0 0 1px var(--line-strong), 0 0 0 2px var(--surface-2), 0 0 0 3.5px var(--text-3); }
+.tg-swatch:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* what is inside a tab, while the pointer rests on it */
+.tab-peek { position: fixed; top: 0; left: 0; z-index: 90; width: 300px; max-width: calc(100vw - 16px); padding: 10px 12px 11px; border-radius: 12px; background: var(--surface-2); box-shadow: var(--shadow-lg), inset 0 0 0 1px var(--line); pointer-events: none; opacity: 0; translate: 0 -4px; transition: opacity .14s, translate .14s; }
+.tab-peek.is-in { opacity: 1; translate: 0 0; }
+.tab-peek[hidden] { display: none; }
+.tab-peek-head { display: flex; align-items: center; gap: 7px; color: var(--text); font-size: 13px; font-weight: 600; }
+.tab-peek-head .ico { width: 14px; height: 14px; color: var(--accent); flex: none; }
+.tab-peek-title, .tab-peek-path { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-peek-path { margin-top: 1px; font-size: 11px; color: var(--text-4); direction: rtl; text-align: left; }
+.tab-peek-text { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); max-height: 210px; overflow: hidden; font-size: 12px; line-height: 1.5; color: var(--text-2); -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent); mask-image: linear-gradient(to bottom, #000 78%, transparent); }
+.tab-peek-l { min-height: .6em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-peek-h { margin: 2px 0 1px; font-weight: 650; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-peek-img { display: block; margin-top: 8px; width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; background: var(--surface); }
+.tab-peek-empty { display: flex; align-items: center; gap: 7px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12px; color: var(--text-3); }
+.tab-peek-empty .ico { width: 14px; height: 14px; }
+.tg-peek { width: 236px; padding: 6px; }
+.tg-peek-head { display: flex; align-items: center; gap: 8px; padding: 5px 8px 7px; }
+.tg-peek-head .tg-dot { width: 9px; height: 9px; }
+.tg-peek-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--text); }
+.tg-peek-name.is-empty { color: var(--text-3); font-weight: 500; }
+.tg-peek-count { font-size: 11px; color: var(--text-4); font-variant-numeric: tabular-nums; }
+.tg-peek-list { display: flex; flex-direction: column; gap: 1px; max-height: 50vh; overflow-y: auto; border-top: 1px solid var(--line); padding-top: 4px; }
+.tg-peek-row { width: 100%; height: 28px; gap: 8px; padding: 0 8px; border-radius: 6px; color: var(--text-2); font-size: 12.5px; }
+.tg-peek-row .ico { width: 14px; height: 14px; flex: none; color: color-mix(in srgb, var(--gc) 60%, var(--text-3)); }
+.tg-peek-row:hover { background: var(--active); color: var(--text); }
+.tg-peek-title { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* a file dragged onto the tab strip opens where the line shows */
+#tabs.is-file-drop { box-shadow: inset 0 -2px 0 var(--accent-soft); }
+
+/* ── closing several tabs without moving the pointer ────────────────────
+   While the strip is "holding", every tab keeps the width it had when the
+   first cross was clicked, so the next cross lands under the same pixel.
+   The variable is registered so it can be transitioned back. */
+@property --tab-hold {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 190px;
+}
+#tabs.is-holding .tab:not(.is-pinned) { flex: 0 0 var(--tab-hold); width: var(--tab-hold); min-width: 0; max-width: none; }
+#tabs.is-settling { transition: --tab-hold 0.38s cubic-bezier(0.33, 0, 0.15, 1); }
+
+/* The chip is the one handle for folding a group: a full-height target with a
+   pointer cursor and a small arrow that says which way it will go. */
+.tg-chip { position: relative; cursor: pointer; min-width: 30px; height: 26px; }
+.tg-chip.is-bare:not(.is-collapsed) { width: 30px; }
+.tg-chip.is-collapsed { height: 26px; }
+.tg-chip::before { content: ""; position: absolute; inset: -5px -2px; }
+.tg-chip::after { content: ""; flex: none; width: 5px; height: 5px; margin-left: 1px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; opacity: .55; transform: rotate(45deg) translateY(-1px); transition: transform .15s var(--ease), opacity .12s; }
+.tg-chip.is-collapsed::after { transform: rotate(-45deg); }
+.tg-chip:hover::after { opacity: 1; }
+.tg-chip.is-bare:not(.is-collapsed) .tg-dot { display: none; }
+
+/* the tab's card can be gone over to, scrolled, and clicked to open the tab */
+.tab-peek { pointer-events: auto; cursor: pointer; }
+.tab-peek[hidden] { pointer-events: none; }
+.tab-peek::before { content: ""; position: absolute; left: 0; right: 0; top: -10px; height: 10px; }
+.tab-peek:hover { box-shadow: var(--shadow-lg), inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.tab-peek:hover .tab-peek-text { max-height: 46vh; overflow-y: auto; -webkit-mask-image: none; mask-image: none; }
+
+/* a group's look, from its Customize */
+.tg-chip .tg-ico { width: 12px; height: 12px; flex: none; color: var(--gc); }
+.tg-chip.is-solid { background: var(--gc); color: #fff; }
+.tg-chip.is-solid:hover { background: color-mix(in srgb, var(--gc) 88%, #fff); }
+.tg-chip.is-solid .tg-dot { background: rgba(255, 255, 255, .85); }
+.tg-chip.is-solid .tg-ico { color: #fff; }
+.tg-chip.is-outline { background: transparent; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--gc) 70%, transparent); }
+.tg-chip.is-plain { background: transparent; padding-inline: 5px; }
+.tg-chip.is-bold { font-weight: 750; }
+.tg-chip.is-italic .tg-label { font-style: italic; }
+.tg-chip.is-caps .tg-label { font-variant-caps: all-small-caps; letter-spacing: .05em; }
+.tg-chip.is-size-s { font-size: 10.5px; height: 20px; }
+.tg-chip.is-size-l { font-size: 13px; height: 24px; max-width: 170px; }
+.tg.is-wash > .tab:not(.has-color) { background: color-mix(in srgb, var(--gc) 9%, transparent); }
+.tg.is-wash > .tab.is-active:not(.has-color) { background: color-mix(in srgb, var(--gc) 20%, var(--surface-2)); }
+.tg.no-line::after { display: none; }
+.tab-cust .tg-name { width: 100%; }
+
+/* the + is always in view: it holds the strip's right end while the tabs scroll under it */
+.tabs > .tab-new { position: sticky; right: 0; z-index: 4; background: var(--bg-2); box-shadow: -8px 0 8px -4px var(--bg-2); }
+.tab-cust-fx { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* a group grows in once, when it is new - not on every redraw of the strip */
+.tg.is-new::after { animation: tg-line 0.2s var(--ease); }
+.tg-chip.is-new { animation: tg-in 0.18s var(--ease); }
+
+/* the + rides over the tabs, so its hover is a solid ground, never see-through; the plus turns a quarter */
+.tabs > .tab-new:hover { background: color-mix(in srgb, var(--text) 10%, var(--bg-2)); color: var(--accent); }
+.tabs > .tab-new .ico { transition: transform .22s var(--ease); }
+.tabs > .tab-new:hover .ico { transform: scale(1.08); }
+.tabs > .tab-new:active .ico { transform: scale(.9); }
+/* the card's last line: the tab's keys, quiet */
+.tab-peek-keys { margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--line); font-size: 11px; color: var(--text-4); }
+.tab-peek.is-small { width: auto; max-width: 340px; padding: 7px 11px 8px; }

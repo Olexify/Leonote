@@ -1,0 +1,212 @@
+Leonote - Software Licence
+Copyright (c) 2026 Olexify (https://olexify.dev). All rights reserved.
+Leonote(TM) and the Leonote logos are trademarks of Olexify.
+
+Leonote is free to use. It is licensed, not sold, and it is not open source.
+The full terms are published at
+https://leonote.app/terms and the privacy policy at
+https://leonote.app/privacy. This file restates the parts that travel with
+the software. If the two differ, the published terms prevail, except for
+sections 2A and 2B: for those, this file prevails.
+
+
+1. Licence
+----------
+
+Leonote is free to download and use. You receive a personal, worldwide,
+non-exclusive, non-transferable, revocable licence to install and use it, for
+your own personal or internal business purposes, on the computers you own or
+personally use. Paid extras, if they are ever offered, come with their own
+terms.
+
+If you got Leonote from the Microsoft Store, Microsoft's terms govern the
+download and how many of your devices may install it; this licence governs how
+you may use Leonote itself.
+
+
+2. Leonote's own code and assets
+--------------------------------
+
+No permission is granted to copy, modify, merge, publish, distribute,
+sublicense, sell, rent, lend, reverse engineer, decompile, disassemble, or
+create derivative works from any part of Leonote, in whole or in part, without
+prior written permission from the copyright holder, except installing it on
+your own computers, except as sections 2A and 2B allow, and except to the limited
+extent that applicable law expressly allows despite this restriction. You may
+not remove or change this notice, bypass any licence check or technical
+protection, or use Leonote's code, design or assets to build, train or publish
+a competing product.
+
+Having access to the source code, or to the readable parts of an installed
+application, grants no licence to use, copy or redistribute any of it, and
+does not place it in the public domain.
+
+
+2A. The source code
+-------------------
+
+Leonote's source code may be published for reference: it is source-available,
+not open source, and all rights in it stay reserved.
+
+- You may read it, and view and fork it on github.com to the extent GitHub's
+  Terms of Service require. A fork grants no other right: it may not be built,
+  used, modified, published or distributed, in whole or in part, except as
+  this section and section 2B allow.
+- You may build it on your own computer only to review it or to research its
+  security, and you may not hand such a build to anyone.
+- The licence in section 1 covers the official builds, from the Microsoft
+  Store and from leonote.app, not builds made from the source.
+- Nothing in the source is a licence to use Leonote's name, logos or design.
+
+Contributions: issues and security reports are welcome; pull requests are not
+accepted. Anything you send is given freely, and the copyright holder may use
+it without obligation to you.
+
+
+2B. Plugins
+----------
+
+Leonote offers a plugin interface. You may write, publish and share plugins
+that use only that interface and the plugin documentation and examples, which
+you may copy for this purpose. The plugin examples (docs/plugins/example and
+docs/plugins/plugins.template.json) are also offered under the MIT No
+Attribution licence (MIT-0), given in that folder, so a plugin made from them
+may carry any licence.
+
+A plugin is its author's own work, under whatever licence the author chooses.
+It may not contain any other part of Leonote's code, design or assets, nor
+patch or bypass Leonote itself. It may not suggest that the copyright holder
+made or endorses it, or use Leonote's name or logos except to say truthfully
+"a plugin for Leonote".
+
+The copyright holder does not make, check or endorse plugins, except for a
+version marked verified, and that mark is no guarantee. You install them at
+your own risk, and the copyright holder is not responsible for what they do.
+Each plugin's author is responsible for following the law and the rules of the
+services it uses.
+
+This section gives no right to copy or redistribute any other part of Leonote. The rest of this
+licence still applies.
+
+
+3. Third-party components
+-------------------------
+
+Leonote includes software and fonts that are not Leonote's, under open
+licences that grant you rights this licence cannot take away, among them code
+ported from Excalidraw (MIT) in the sketch editor. Its interface sounds are
+used under the Pixabay Content License, which does not allow them to be handed
+out on their own; they are not part of the published source. Sections 2 and
+2A do not apply to those components. Each is governed by its own licence,
+listed in THIRD-PARTY-NOTICES.md, and those licences prevail over anything
+here.
+
+
+4. Your data and your content
+-----------------------------
+
+Your data is yours. Notes stay plain files on your disk; Leonote has no
+accounts and no servers that hold your notes, and the copyright holder never receives your files
+and therefore cannot recover them. The encrypted backup is encrypted with
+your password, which Leonote never stores or sends; if you lose it, nobody can
+open that backup. Backup plans make plain zip files.
+
+Leonote creates, edits, renames, moves, converts and deletes files in the
+folders you point it at. You are responsible for keeping independent backups
+of anything you cannot afford to lose.
+
+Optional cloud storage, if it is offered and you subscribe to it, is covered
+by its own terms.
+
+
+5. Use of the software
+----------------------
+
+Leonote is a tool. It hosts no media and supplies no copyrighted content of
+its own. What it opens or plays comes from files you provide or from addresses
+you give it, requested from your computer directly from the third party
+concerned. You are responsible for having the right to access that material
+and for complying with the terms of the sites and services you use Leonote
+with. No third-party service is guaranteed to work with Leonote or to keep
+working.
+
+Add-ons, helper programs (such as FFmpeg or whisper.cpp), AI services and
+servers that you choose to install or connect are not part of Leonote: the
+copyright holder does not make, check or endorse them, each comes under its own
+licence and terms, and what they receive or do is between you and them.
+Sections 6 and 7 apply to them in full.
+
+External software that you run yourself, including AI agents, can read and
+change your notes and tasks. Those agents are not the copyright holder's, and
+the copyright holder is not responsible for anything they read, write, change,
+delete or send elsewhere.
+
+Reminders, recurring tasks and timers are conveniences and may fail to fire.
+Do not rely on Leonote as the only safeguard for anything safety-critical,
+medical, legal or financial.
+
+
+6. No warranty
+--------------
+
+Leonote is provided "as is" and "as available", without warranty of any kind,
+express or implied, including but not limited to the implied warranties of
+merchantability, fitness for a particular purpose, title, and
+non-infringement. There is no warranty that it is error-free, that it is
+compatible with any other software or file format, or that any file it writes
+will be readable by any other program. Planned or announced features are
+statements of intention, not promises, and are not part of this licence.
+
+
+7. Limitation of liability
+--------------------------
+
+To the maximum extent permitted by applicable law, the copyright holder is not
+liable for any indirect, incidental, special, consequential or exemplary
+damages, nor for any loss of or damage to data or files, loss of profits, or
+interruption of work or study, arising out of or in connection with Leonote or
+its use, whether the claim is founded in contract, tort or otherwise, and even
+if the possibility of such damage was known.
+
+Where liability cannot lawfully be excluded, it is limited to the amount you
+paid for Leonote, if anything.
+
+Nothing in this licence excludes or limits liability for death or personal
+injury caused by negligence, for fraud or fraudulent misrepresentation, or for
+anything else that applicable law does not allow to be excluded or limited. If
+you are a consumer, this licence does not affect your statutory rights.
+
+
+8. Termination
+--------------
+
+This licence ends automatically if you materially break its terms, or, for
+anything you paid for, when a refund or chargeback is issued for it. You must then stop using
+Leonote and delete your copies. Your own files remain yours.
+
+
+9. Governing law
+----------------
+
+This licence, and any dispute arising out of it or out of the use of Leonote,
+is governed by the laws of Ukraine, without regard to its conflict-of-law
+rules, and the courts of Ukraine have jurisdiction over any such dispute.
+
+If you are a consumer, the mandatory consumer-protection law of the country
+where you live still applies to you, and you may also bring a claim in the
+courts of that country; nothing here takes that away.
+
+If any part of this licence is found unenforceable, the rest of it stays in
+force.
+
+
+10. Contact
+-----------
+
+Licensing enquiries: olexifyyy@gmail.com
+Support: https://olexify.dev
+Security problems: see SECURITY.md - report them privately to the address above.
+
+Copyright complaints: if you believe something Leonote ships or links to
+infringes your rights, write to olexifyyy@gmail.com with the work concerned,
+where it appears, and how to contact you.

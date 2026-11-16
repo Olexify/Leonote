@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Script</title>
+<style>
+  :root { --bg: #0e0e10; --fg: #f2f2f4; --dim: #8c8c95; --line: rgba(255,255,255,.12); --bar: rgba(22,22,26,.94); --accent: #e0a33b;
+          --size: 30px; --past: .35; --ahead: .55; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 13px/1.4 "Inter Variable", "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  .bar { position: absolute; left: 0; right: 0; top: 0; height: 36px; display: flex; align-items: center; gap: 2px; padding: 4px 6px; background: var(--bar);
+         z-index: 5; transition: opacity .2s; user-select: none; }
+  body.idle:not(.editing):not(.panel-open) .bar { opacity: 0; }
+  .drag { cursor: move; flex: 1; min-width: 0; height: 100%; display: flex; align-items: center; gap: 8px; padding: 0 6px; overflow: hidden; }
+  .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; pointer-events: none; }
+  .hidden-tag { flex: none; padding: 1px 7px; border-radius: 999px; font-size: 11px; color: #7fd6a0; border: 1px solid rgba(127,214,160,.35); pointer-events: none; }
+  button { appearance: none; border: 0; background: transparent; color: var(--fg); min-width: 28px; height: 26px; border-radius: 6px; display: inline-grid; place-items: center; cursor: pointer; padding: 0 6px; font: inherit; }
+  button:hover { background: rgba(255,255,255,.1); }
+  button.close:hover { background: #c42b1c; }
+  button.is-on { color: var(--accent); }
+  input[type=number], input[type=text], select { background: rgba(255,255,255,.06); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; height: 26px; padding: 0 6px; font: inherit; }
+  input[type=number] { width: 64px; text-align: right; font-variant-numeric: tabular-nums; }
+  .bar input[type=number] { width: 56px; height: 24px; }
+  .unit { color: var(--dim); padding: 0 4px 0 2px; pointer-events: none; }
+  svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  #page { position: absolute; inset: 0; overflow-y: auto; scrollbar-width: thin; padding: calc(33vh - 0.6em) 28px 70vh; font-size: var(--size); line-height: 1.5; }
+  /* scroll mode: what is above the guide line is passed, below it still to come - each faded as set */
+  body.scroll #page { -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,var(--past)) 0, rgba(0,0,0,var(--past)) 24%, #000 30%, #000 40%, rgba(0,0,0,var(--ahead)) 50%, rgba(0,0,0,var(--ahead)) 100%);
+                      mask-image: linear-gradient(to bottom, rgba(0,0,0,var(--past)) 0, rgba(0,0,0,var(--past)) 24%, #000 30%, #000 40%, rgba(0,0,0,var(--ahead)) 50%, rgba(0,0,0,var(--ahead)) 100%); }
+  #page p, #page h1, #page h2, #page h3, #page li { margin: 0 0 .7em; overflow-wrap: anywhere; }
+  #page h1, #page h2, #page h3 { font-size: 1.12em; color: var(--accent); }
+  #page ul { margin: 0 0 .7em; padding-left: 1.1em; }
+  /* word by word: the word now in full, the passed and the coming ones faded as set */
+  body.words .w { opacity: var(--ahead); transition: opacity .12s; cursor: pointer; border-radius: 4px; }
+  body.words .w.past { opacity: var(--past); }
+  body.words .w.now { opacity: 1; background: rgba(224,163,59,.18); box-shadow: 0 0 0 2px rgba(224,163,59,.18); }
+  #page[contenteditable="true"] { outline: 0; caret-color: var(--accent); }
+  #editBtn.is-on { box-shadow: inset 0 -2px 0 var(--accent); }
+  .guide { position: absolute; left: 0; right: 0; top: 33%; height: 0; border-top: 1px dashed rgba(224,163,59,.35); pointer-events: none; z-index: 2; }
+  .help { position: absolute; right: 10px; bottom: 8px; color: var(--dim); font-size: 11px; z-index: 3; transition: opacity .2s; pointer-events: none; }
+  body.idle .help, body.editing .help { opacity: 0; }
+  .grip { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; z-index: 6; }
+  .panel { position: absolute; top: 40px; right: 8px; width: 300px; max-height: calc(100% - 50px); overflow-y: auto; background: #18181c; border: 1px solid var(--line);
+           border-radius: 10px; padding: 10px 12px; z-index: 6; box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+  .row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+  .row label { flex: 1; color: var(--dim); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .seg button { border-radius: 0; height: 26px; }
+  .seg button.is-on { background: rgba(224,163,59,.16); }
+  h4 { margin: 12px 0 4px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+  .preset { display: flex; align-items: center; gap: 4px; margin: 2px 0; }
+  .preset button.name { flex: 1; justify-content: start; display: flex; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .note { color: var(--dim); font-size: 11.5px; margin: 4px 0; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body class="scroll">
+  <div class="bar">
+    <button id="play" title="Start / stop (Space)"></button>
+    <button id="slower" title="Slower (↓)">−</button><input id="speedBox" type="number" min="1" title="Speed - type a value, or ↑ ↓"><button id="faster" title="Faster (↑)">+</button><span class="unit" id="speedUnit"></span>
+    <button id="smaller" title="Smaller text (Ctrl −)">A−</button><input id="sizeBox" type="number" min="12" max="120" title="Text size in px - type a value, or Ctrl+wheel"><button id="bigger" title="Bigger text (Ctrl +)">A+</button>
+    <button id="top" title="Back to the start (Home)"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+    <div class="drag" id="drag" title="Drag to move"><span class="title" id="title"></span><span class="hidden-tag" title="Windows leaves this window out of screen recordings and shares (OBS, Zoom, Teams, screenshots). A camera or a capture card still sees it.">hidden from recording</span></div>
+    <button id="editBtn" title="Edit the text right here - saved to the note as you type">Edit</button>
+    <button id="gear" title="Mode, speeds, fading and presets"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    <button id="pin" class="is-on" title="Stay on top"><svg viewBox="0 0 24 24"><path d="M9 4h6l-1 6 3 3H7l3-3z"/><path d="M12 13v7"/></svg></button>
+    <button id="close" class="close" title="Close (Esc) - it comes back as it was"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="guide"></div>
+  <div id="page"></div>
+  <div class="panel" id="panel" hidden>
+    <div class="row"><label>Mode</label><span class="seg"><button id="modeScroll">Scroll</button><button id="modeWords">Word by word</button></span></div>
+    <div class="row"><label>Scroll speed</label><input id="pxBox" type="number" min="1" max="600"><span class="unit">px/s</span></div>
+    <div class="row"><label>Word speed</label><input id="wpmBox" type="number" min="20" max="900"><span class="unit">words/min</span></div>
+    <div class="row"><label>Text size</label><input id="sizeBox2" type="number" min="12" max="120"><span class="unit">px</span></div>
+    <h4>Fading</h4>
+    <div class="row"><label>Already read</label><input id="pastBox" type="number" min="0" max="100"><span class="unit">% shown</span></div>
+    <div class="row"><label>Not read yet</label><input id="aheadBox" type="number" min="0" max="100"><span class="unit">% shown</span></div>
+    <div class="note">100 = no fading; 0 = only the line (or word) you are on.</div>
+    <h4>Presets</h4>
+    <div class="note">The window's size and place, with these settings - one per video setup.</div>
+    <div id="presets"></div>
+    <div class="row"><input id="presetName" type="text" placeholder="Name, e.g. Face cam left" style="flex:1"><button id="presetSave">Save</button></div>
+  </div>
+  <div class="help" id="help"></div>
+  <div class="grip" id="grip"></div>
+  <script src="scriptmap.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

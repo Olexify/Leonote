@@ -1,0 +1,69 @@
+[package]
+name = "leonote-rs"
+version = "1.0.0"
+description = "Leonote - instant local-first notes and tasks"
+authors = ["Olexify.dev"]
+license-file = "../LICENSE"
+publish = false
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "leonote_rs_lib"
+crate-type = ["rlib"] # no mobile build: the static and dynamic libraries only filled the disk
+
+# "store" marks the Microsoft Store package (scripts/build-store.ps1).
+[features]
+store = []
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# protocol-asset: vault images/PDFs/media reach the webview via convertFileSrc,
+# scoped at startup to the resolved vault (see allow_vault_assets)
+tauri = { version = "2", features = ["tray-icon", "protocol-asset", "unstable"] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+# preserve_order: keep every object's key order exactly as written, so a
+# compaction never reorders keys and a git diff of the task file shows only
+# real changes
+serde_json = { version = "1", features = ["preserve_order"] }
+indexmap = { version = "2", features = ["serde"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+notify = "8"
+filetime = "0.2"
+# Backups: a zip streamed through age's passphrase (scrypt) encryption, so
+# the password never leaves the device and a cloud copy stays opaque
+age = { version = "0.12.1", default-features = false }
+# deflate only (pure-Rust zlib-rs backend); chrono for entry timestamps
+zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs", "xz", "chrono"] }
+# 7z archives, read only (listing and extraction in the app); pure Rust
+sevenz-rust = "0.6"
+# save/open dialogs for picking the backup file
+tauri-plugin-dialog = "2"
+ureq = { version = "2", default-features = false, features = ["tls", "json"] }
+base64 = "0.23.1"
+# songs' own details (title, artist, cover, the user's tags) read and written
+# in the file itself, every common audio format; pure Rust, no codecs
+lofty = "0.25"
+
+[target.'cfg(windows)'.dependencies]
+# the same versions Tauri's own WebView2 layer uses, for one settings call
+webview2-com = "0.39"
+windows-core = "0.62"
+windows = { version = "0.62", features = ["Win32_UI_Input_KeyboardAndMouse", "Win32_Foundation", "Win32_System_DataExchange", "Win32_System_Memory", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_Storage_Packaging_Appx", "Win32_Security_Cryptography", "Win32_Graphics_Gdi", "Win32_System_Threading", "Win32_System_ProcessStatus", "Win32_System_WinRT", "Media_SpeechRecognition", "Foundation", "Foundation_Collections", "Globalization", "Win32_Devices_PortableDevices", "Win32_System_Com", "Win32_System_Com_StructuredStorage", "Win32_System_Variant", "Win32_Graphics_Imaging", "Win32_UI_Shell_PropertiesSystem", "UI_Notifications", "Data_Xml_Dom", "Win32_System_IO", "Win32_System_Ioctl", "ApplicationModel", "ApplicationModel_Activation"] }
+# opt-in file associations, HKEY_CURRENT_USER only (external.rs); already in
+# the tree via tauri-plugin-autostart, so this adds no new dependency
+winreg = "0.56"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-window-state = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-autostart = "2"
+

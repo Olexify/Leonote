@@ -1,0 +1,4 @@
+# these run inside Linux: CRLF would break them
+*.sh text eol=lf
+*.Dockerfile text eol=lf
+*.cmd text eol=crlf

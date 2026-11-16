@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Leonote player</title>
+<style>
+  html { margin: 0; height: 100%; background: transparent; }
+  body { margin: 0; height: 100%; display: flex; align-items: center; gap: 12px; padding: 0 12px 0 14px; box-sizing: border-box; overflow: hidden; user-select: none; cursor: default;
+    background: var(--bg, #15161a); color: var(--fg, #ececf1); font: 13px/1.35 Inter, "Segoe UI", system-ui, sans-serif; border-radius: 16px; box-shadow: inset 0 0 0 1px rgba(128,128,128,.3); }
+  .art { position: relative; flex: none; width: 76px; height: 76px; border-radius: 12px; overflow: hidden; display: grid; place-items: center; background: #2a2c33 center / cover no-repeat; box-shadow: 0 6px 16px -8px rgba(0,0,0,.6); }
+  .art svg { width: 30px; height: 30px; color: rgba(255,255,255,.92); filter: drop-shadow(0 1px 3px rgba(0,0,0,.35)); }
+  .art.has-cover svg, .art.is-video svg { display: none; }
+  .art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; background: #000; }
+  .art.is-video img { display: block; }
+  .meta { flex: 1; min-width: 0; }
+  .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .time { color: var(--dim, #9a9ca6); font-size: 11.5px; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  /* the timeline: a thin line with a tall, easy place to press; click or drag to seek */
+  .bar { position: relative; height: 14px; margin-top: 2px; cursor: pointer; touch-action: none; }
+  .bar::before { content: ""; position: absolute; left: 0; right: 0; top: 5px; height: 4px; border-radius: 2px; background: rgba(128,128,128,.28); }
+  .bar i { position: absolute; left: 0; top: 5px; display: block; height: 4px; width: 0; border-radius: 2px; background: var(--accent, #e0a84a); pointer-events: none; }
+  .bar b { position: absolute; top: 2px; left: 0; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--accent, #e0a84a); transform: scale(0); transition: transform .12s; pointer-events: none; }
+  .bar:hover b, .bar.is-drag b { transform: scale(1); }
+  .btns { display: flex; align-items: center; gap: 2px; }
+  button { all: unset; width: 30px; height: 30px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: inherit; }
+  button:hover { background: rgba(128,128,128,.22); }
+  button.play { width: 36px; height: 36px; border-radius: 50%; background: var(--fg, #ececf1); color: var(--bg, #15161a); }
+  button.play:hover { filter: brightness(.92); background: var(--fg, #ececf1); }
+  .corner { position: fixed; top: 4px; right: 5px; display: flex; gap: 1px; opacity: 0; transition: opacity .12s; }
+  body:hover .corner { opacity: 1; }
+  .corner button { width: 20px; height: 20px; border-radius: 6px; color: var(--dim, #9a9ca6); }
+  svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .corner svg { width: 12px; height: 12px; }
+  .play svg { fill: currentColor; stroke: none; }
+  /* a grip in the corner: the window has no frame of its own to pull */
+  .grip { position: fixed; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; opacity: 0; transition: opacity .12s; z-index: 5;
+    background: linear-gradient(135deg, transparent 50%, rgba(160,160,160,.55) 50%, rgba(160,160,160,.55) 58%, transparent 58%, transparent 70%, rgba(160,160,160,.55) 70%, rgba(160,160,160,.55) 78%, transparent 78%); border-bottom-right-radius: 16px; }
+  body:hover .grip { opacity: 1; }
+
+  /* TALL: the picture on top, growing with the window, the rest below it */
+  body.is-tall { flex-direction: column; align-items: stretch; padding: 10px; gap: 8px; }
+  body.is-tall .art { width: 100%; height: auto; flex: 1 1 auto; min-height: 0; }
+  body.is-tall .meta { flex: none; }
+  body.is-tall .btns { justify-content: center; }
+  /* NARROW: no room for the words */
+  body.is-narrow .meta { display: none; }
+  body.is-narrow { justify-content: center; padding: 0 8px; gap: 8px; }
+  /* TINY: just the picture, which is the play button; the rest comes back when the window grows */
+  body.is-tiny { padding: 0; }
+  body.is-tiny .art { position: fixed; inset: 0; width: auto; height: auto; border-radius: 16px; cursor: pointer; }
+  body.is-tiny .meta, body.is-tiny .btns { display: none; }
+  body.is-tiny .art::after { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,.35); opacity: 0; transition: opacity .12s; }
+  body.is-tiny:hover .art::after { opacity: 1; }
+  body.is-tiny .tiny-play { display: grid; }
+  .tiny-play { display: none; position: fixed; inset: 0; place-items: center; z-index: 2; opacity: 0; transition: opacity .12s; pointer-events: none; color: #fff; }
+  body.is-tiny:hover .tiny-play { opacity: 1; }
+  .tiny-play svg { width: 42%; height: 42%; max-width: 40px; max-height: 40px; fill: currentColor; stroke: none; }
+  body.is-tiny .corner { top: 2px; right: 2px; }
+  body.is-tiny .corner #open { display: none; }
+</style>
+</head>
+<body>
+  <div class="art" id="art"><svg viewBox="0 0 24 24"><path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg><img id="frame" alt=""></div>
+  <div class="meta"><div class="name" id="name">Nothing playing</div><div class="time" id="time"></div><div class="bar"><i id="fill"></i><b id="knob"></b></div></div>
+  <div class="btns">
+    <button id="prev" title="Previous"><svg viewBox="0 0 24 24"><path d="M6 5v14M19 6l-9 6 9 6z"/></svg></button>
+    <button id="play" class="play" title="Play / pause"><svg viewBox="0 0 24 24" id="playIco"><path d="M8 5.5v13l11-6.5z"/></svg></button>
+    <button id="next" title="Next"><svg viewBox="0 0 24 24"><path d="M18 5v14M5 6l9 6-9 6z"/></svg></button>
+  </div>
+  <div class="corner">
+    <button id="open" title="Open Leonote's Player"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-8 8M10 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4"/></svg></button>
+    <button id="close" title="Close the mini player"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="tiny-play"><svg viewBox="0 0 24 24" id="tinyIco"><path d="M8 5.5v13l11-6.5z"/></svg></div>
+  <div class="grip" id="grip" title="Drag to resize - down to a small button, or up to a proper picture"></div>
+<script src="mini.js"></script>
+</body>
+</html>

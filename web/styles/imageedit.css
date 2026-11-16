@@ -1,0 +1,491 @@
+/* ── the picture editor ──────────────────────────────────────────────────
+   Layers, brushes and colour adjustments over a picture that is never
+   written to. Its own file, imported by app.css with one line, so the editor
+   can grow without app.css growing with it. */
+
+.ie {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  animation: ie-in var(--dur-2) var(--ease);
+}
+@keyframes ie-in { from { opacity: 0; } }
+.ie-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* ── header ─────────────────────────────────────────────────────────── */
+.ie-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 10px 0 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.ie-head-ico { color: var(--text-3); flex: none; }
+.ie-title { min-width: 0; }
+.ie-name { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ie-sub { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--text-3); margin-top: 1px; }
+.ie-dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: 0.55; }
+.ie-state[data-state="dirty"] { color: var(--accent); }
+.ie-state[data-state="error"] { color: var(--danger); }
+.ie-spacer { flex: 1; }
+.ie-group { display: flex; align-items: center; gap: 2px; }
+.ie-group + .ie-group { margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--line); }
+
+.ie-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.ie-btn:hover { background: var(--hover); color: var(--text); }
+.ie-btn:active { transform: scale(var(--press)); }
+.ie-btn:disabled { opacity: 0.35; pointer-events: none; }
+.ie-btn.ie-primary { background: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.ie-btn.ie-primary:hover { background: color-mix(in srgb, var(--accent) 88%, #fff); color: var(--accent-fg); }
+.ie-zoom { font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums; min-width: 40px; }
+
+/* ── the three columns ──────────────────────────────────────────────── */
+.ie-main { display: grid; grid-template-columns: 58px minmax(0, 1fr) 306px; min-height: 0; }
+
+.ie-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  overflow-y: auto;
+}
+.ie-rail-sep { width: 26px; height: 1px; background: var(--line); margin: 4px 0; flex: none; }
+.ie-tools, .ie-sizes { display: flex; flex-direction: column; gap: 3px; }
+.ie-tool, .ie-size {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.ie-tool:hover, .ie-size:hover { background: var(--hover); color: var(--text); }
+.ie-tool.is-on { background: var(--accent-wash); color: var(--accent); }
+.ie-size.is-on { background: var(--active); color: var(--text); }
+.ie-size i { display: block; border-radius: 50%; background: currentColor; }
+
+.ie-swatches { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 2px 0; justify-items: center; }
+.ie-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: var(--sw);
+  cursor: pointer;
+  padding: 0;
+  transition: transform var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
+}
+.ie-swatch:hover { transform: scale(1.15); }
+.ie-swatch.is-on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--accent); }
+.ie-custom { display: grid; place-items: center; width: 36px; height: 28px; border-radius: 8px; color: var(--text-3); cursor: pointer; position: relative; }
+.ie-custom:hover { background: var(--hover); color: var(--text); }
+.ie-custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* ── the stage ──────────────────────────────────────────────────────── */
+.ie-stage {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  outline: none;
+  --ie-check: rgba(128, 128, 140, 0.055);
+  background:
+    linear-gradient(45deg, var(--ie-check) 25%, transparent 25%, transparent 75%, var(--ie-check) 75%) 0 0 / 24px 24px,
+    linear-gradient(45deg, var(--ie-check) 25%, transparent 25%, transparent 75%, var(--ie-check) 75%) 12px 12px / 24px 24px,
+    var(--bg-2);
+}
+.ie-stage.is-panning { cursor: grabbing; }
+.ie-paper {
+  position: relative;
+  line-height: 0;
+  border-radius: 3px;
+  box-shadow: 0 10px 40px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--line-strong);
+  will-change: transform;
+}
+.ie-photo, .ie-ink, .ie-vignette { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; }
+.ie-photo { z-index: 0; }
+.ie-vignette {
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(farthest-corner circle at 50% 50%, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 1) 100%);
+  transition: opacity var(--dur-1) linear;
+}
+.ie-ink { z-index: 2; cursor: crosshair; touch-action: none; }
+.ie-ink[data-tool="text"] { cursor: text; }
+.ie-ink[data-tool="eraser"] { cursor: cell; }
+
+.ie-textbox {
+  position: absolute;
+  z-index: 3;
+  margin: 0;
+  padding: 0 2px;
+  border: 1px dashed var(--accent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  font-family: var(--font);
+  font-weight: 600;
+  line-height: 1.22;
+  resize: none;
+  overflow: hidden;
+  outline: none;
+  white-space: pre;
+  transform-origin: 0 0;
+}
+
+/* ── the panel ──────────────────────────────────────────────────────── */
+.ie-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  overflow-y: auto;
+}
+.ie-sec { padding: 10px 12px 14px; }
+.ie-sec + .ie-sec { border-top: 1px solid var(--line); }
+.ie-sec-adjust { flex: 1; }
+.ie-sec-head { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; color: var(--text-3); }
+.ie-sec-head { cursor: pointer; user-select: none; }
+.ie-sec-caret { width: 14px; height: 14px; color: var(--text-4); transition: transform var(--dur-2, .18s) var(--ease, ease); }
+.ie-sec.is-folded .ie-sec-caret { transform: rotate(-90deg); }
+.ie-sec.is-folded { flex: none; padding-bottom: 6px; }
+.ie-sec.is-folded > :not(.ie-sec-head) { display: none; }
+.ie-sec-head h3 { margin: 0; flex: 1; font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-3); }
+.ie-mini {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.ie-mini:hover { background: var(--hover); color: var(--text); }
+.ie-hint { margin: 8px 2px 0; font-size: 11px; line-height: 1.45; color: var(--text-4); }
+
+.ie-layers { display: flex; flex-direction: column; gap: 3px; max-height: 196px; overflow-y: auto; }
+.ie-ln {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 4px 5px 2px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease);
+}
+.ie-ln:hover { background: var(--hover); }
+.ie-ln.is-active { background: var(--accent-wash); border-color: var(--accent-soft); }
+.ie-ln.is-hidden .ie-ln-body { opacity: 0.42; }
+.ie-ln-eye, .ie-ln-more {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.ie-ln-eye:hover, .ie-ln-more:hover { background: var(--active); color: var(--text); }
+.ie-ln.is-active .ie-ln-eye { color: var(--accent); }
+.ie-ln-body { flex: 1; min-width: 0; }
+.ie-ln-top { display: flex; align-items: baseline; gap: 6px; }
+.ie-ln-name { flex: 1; min-width: 0; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ie-ln-count { font-size: 10.5px; color: var(--text-4); font-variant-numeric: tabular-nums; }
+.ie-ln-edit { width: 100%; font-size: 12.5px; }
+
+/* ── sliders ────────────────────────────────────────────────────────── */
+.ie-ln-op, .ie-sl-input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  margin: 1px 0 0;
+  background: transparent;
+  cursor: pointer;
+}
+.ie-ln-op::-webkit-slider-runnable-track, .ie-sl-input::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+.ie-ln-op::-webkit-slider-thumb, .ie-sl-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 11px;
+  height: 11px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--text-2);
+  border: 0;
+  transition: background var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+}
+.ie-ln-op:hover::-webkit-slider-thumb, .ie-sl-input:hover::-webkit-slider-thumb { background: var(--accent); transform: scale(1.15); }
+.ie-ln.is-active .ie-ln-op::-webkit-slider-thumb { background: var(--accent); }
+
+.ie-presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 10px; }
+.ie-preset {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 2px 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-3);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.ie-preset:hover { background: var(--hover); color: var(--text); }
+.ie-preset.is-on { background: var(--accent-wash); border-color: var(--accent-soft); color: var(--accent); }
+.ie-preset-chip {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 30px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f2c14e 0%, #d96f5a 38%, #5b7fb4 72%, #2c3550 100%);
+}
+.ie-preset-chip.has-thumb { background-size: cover; background-position: center; }
+.ie-preset-vig {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(farthest-corner circle at 50% 50%, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 1) 100%);
+}
+
+.ie-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  height: 30px;
+  padding: 0 9px;
+  margin-bottom: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-3);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ie-toggle:hover { background: var(--hover); }
+.ie-toggle.is-on { color: var(--accent); border-color: var(--accent-soft); background: var(--accent-wash); }
+
+.ie-sliders { display: flex; flex-direction: column; gap: 7px; transition: opacity var(--dur-2) var(--ease); }
+.ie-sliders.is-off { opacity: 0.4; }
+.ie-sl-head { display: flex; align-items: baseline; justify-content: space-between; }
+.ie-sl-name { font-size: 12px; color: var(--text-2); }
+.ie-sl-val { font-size: 11px; color: var(--text-4); font-variant-numeric: tabular-nums; }
+
+/* ── the note picker (Insert into a note…) ──────────────────────────── */
+.np-pop {
+  position: fixed;
+  z-index: 120;
+  width: 340px;
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: translateY(var(--rise)) scale(var(--pop));
+  transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease);
+  overflow: hidden;
+}
+.np-pop.is-in { opacity: 1; transform: none; }
+.np-title-bar { padding: 9px 12px 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-4); }
+.np-head { display: flex; align-items: center; gap: 8px; padding: 6px 12px 8px; color: var(--text-3); border-bottom: 1px solid var(--line); }
+.np-input { flex: 1; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 13px; outline: none; }
+.np-list { flex: 1; overflow-y: auto; padding: 5px; }
+.np-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.np-row:hover, .np-row.is-sel { background: var(--hover); }
+.np-row.is-sel { background: var(--accent-wash); }
+.np-row .ico { color: var(--text-3); flex: none; }
+.np-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-sub { font-size: 11px; color: var(--text-4); white-space: nowrap; max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
+.np-empty { padding: 14px 10px; font-size: 12.5px; color: var(--text-4); text-align: center; }
+.np-foot { padding: 6px 12px 8px; font-size: 11px; color: var(--text-4); border-top: 1px solid var(--line); }
+
+/* ── "this picture has edits" marks elsewhere ───────────────────────── */
+.fv-body.fv-center { position: relative; }
+.fv-edited { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); white-space: nowrap; }
+.fv-edited, .iv-edited {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: var(--accent-wash);
+  color: var(--accent);
+}
+.iv-edited { position: absolute; left: 16px; bottom: 14px; z-index: 3; background: rgba(224, 168, 74, 0.18); }
+.img-viewer.has-thumbs .iv-edited { bottom: 106px; }
+
+@media (max-width: 980px) {
+  .ie-main { grid-template-columns: 52px minmax(0, 1fr) 260px; }
+  .ie-presets { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── the header's three ways out ────────────────────────────────────────── */
+.ie-btn.ie-outline { box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text); }
+.ie-btn.ie-outline:hover { box-shadow: inset 0 0 0 1px var(--accent); }
+.ie-btn.ie-done { margin-left: 12px; padding: 0 14px 0 10px; }
+.ie-btn.ie-danger { color: var(--danger); margin-right: 8px; }
+.ie-btn.ie-danger:hover { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
+.ie-btn[hidden] { display: none; }
+
+/* ── the brush as the pointer ───────────────────────────────────────────── */
+.ie-ink[data-tool="pen"], .ie-ink[data-tool="marker"], .ie-ink[data-tool="eraser"] { cursor: none; }
+.ie-ink[data-tool="select"] { cursor: default; }
+.ie-ink[data-borrow="select"] { cursor: default; }
+.ie-stage.is-grab .ie-ink { cursor: grab; }
+.ie-stage.is-panning .ie-ink { cursor: grabbing; }
+.ie.is-moving .ie-ink { cursor: move; }
+.ie-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 6;
+  box-sizing: border-box;
+  border-radius: 50%;
+  pointer-events: none;
+  /* a light line inside a dark one: it shows on any picture */
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  background: color-mix(in srgb, var(--ring, #fff) 16%, transparent);
+  will-change: transform;
+}
+.ie-ring[data-tool="eraser"] { background: transparent; border-style: dashed; }
+.ie-ring[hidden] { display: none; }
+
+/* ── what is picked ─────────────────────────────────────────────────────── */
+.ie-sel { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.ie-selbox, .ie-band { position: absolute; box-sizing: border-box; display: block; }
+.ie-selbox {
+  margin: -3px;
+  padding: 3px;
+  box-sizing: content-box;
+  border-radius: 3px;
+  outline: 1.5px solid var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.35);
+}
+.ie-band { border: 1px dashed var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 2px; }
+
+/* The editor covers the whole window, above the app's own menus (78) and
+   toasts (70) - so anything that pops up while it is open has to clear it,
+   or it opens where nobody can see it. */
+.ie ~ .menu, .ie ~ .dlg-back, .ie ~ .np-pop { z-index: 130; }
+body:has(> #overlay-root > .ie) #toasts { z-index: 131; }
+
+/* ── colour: one big swatch that opens the popup, and the colours used lately ── */
+.ie-colour { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 10px; background: transparent; cursor: pointer; }
+.ie-colour i { display: block; width: 28px; height: 28px; border-radius: 9px; box-shadow: inset 0 0 0 1px rgba(128, 128, 128, 0.5), 0 0 0 2px var(--bg), 0 0 0 3px var(--line-strong); transition: transform var(--dur-1) var(--ease); }
+.ie-colour:hover i { transform: scale(1.08); }
+.ie ~ .colour-pop { z-index: 130; }
+.ie-ring-label {
+  display: none; position: absolute; left: 50%; top: 100%; transform: translate(-50%, 8px); padding: 3px 8px; border-radius: 7px;
+  white-space: nowrap; font: 600 11.5px/1.3 var(--font); color: #fff; background: rgba(12, 12, 16, 0.82); font-variant-numeric: tabular-nums;
+}
+.ie-ring.is-flash .ie-ring-label { display: block; }
+
+/* the viewer's edits switch */
+button.iv-edited { border: 0; cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; height: 30px; padding: 0 10px; gap: 7px; backdrop-filter: blur(10px); }
+button.iv-edited:hover { background: rgba(224, 168, 74, 0.3); }
+.iv-switch { position: relative; width: 26px; height: 15px; border-radius: 8px; background: var(--accent); flex: none; transition: background 0.15s; }
+.iv-switch::after { content: ""; position: absolute; top: 2px; left: 13px; width: 11px; height: 11px; border-radius: 50%; background: #fff; transition: left 0.15s; }
+.iv-edited.is-off { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.75); }
+.iv-edited.is-off .iv-switch { background: rgba(255, 255, 255, 0.3); }
+.iv-edited.is-off .iv-switch::after { left: 2px; }
+.iv-edited[hidden] { display: none; }
+
+/* ── crop: shades over what goes, a frame with handles while the tool is up ── */
+.ie-crop { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.ie-crop[hidden] { display: none; }
+.ie-crop > b { position: absolute; background: rgba(8, 8, 10, .62); }
+.ie-crop.is-live { pointer-events: auto; cursor: crosshair; }
+.ie-crop-frame { position: absolute; box-shadow: 0 0 0 1px rgba(255,255,255,.85), 0 0 0 2px rgba(0,0,0,.35); display: none; }
+.ie-crop.is-live .ie-crop-frame { display: block; cursor: move; }
+/* thirds, faintly */
+.ie-crop.is-live .ie-crop-frame::before, .ie-crop.is-live .ie-crop-frame::after { content: ""; position: absolute; pointer-events: none; opacity: .35; }
+.ie-crop.is-live .ie-crop-frame::before { left: 33.33%; right: 33.33%; top: 0; bottom: 0; border-left: 1px solid #fff; border-right: 1px solid #fff; }
+.ie-crop.is-live .ie-crop-frame::after { top: 33.33%; bottom: 33.33%; left: 0; right: 0; border-top: 1px solid #fff; border-bottom: 1px solid #fff; }
+.ie-crop-h { position: absolute; width: 18px; height: 18px; margin: -9px; }
+.ie-crop-h::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1.5px var(--accent), 0 1px 4px rgba(0,0,0,.5); }
+.ie-crop-h.is-n::after, .ie-crop-h.is-s::after { width: 18px; height: 4px; margin: -2px -9px; border-radius: 3px; }
+.ie-crop-h.is-e::after, .ie-crop-h.is-w::after { width: 4px; height: 18px; margin: -9px -2px; border-radius: 3px; }
+.ie-crop-h.is-nw { left: 0; top: 0; cursor: nwse-resize; } .ie-crop-h.is-ne { left: 100%; top: 0; cursor: nesw-resize; }
+.ie-crop-h.is-se { left: 100%; top: 100%; cursor: nwse-resize; } .ie-crop-h.is-sw { left: 0; top: 100%; cursor: nesw-resize; }
+.ie-crop-h.is-n { left: 50%; top: 0; cursor: ns-resize; } .ie-crop-h.is-s { left: 50%; top: 100%; cursor: ns-resize; }
+.ie-crop-h.is-e { left: 100%; top: 50%; cursor: ew-resize; } .ie-crop-h.is-w { left: 0; top: 50%; cursor: ew-resize; }
+.ie-crop-size { position: absolute; left: 50%; bottom: -26px; transform: translateX(-50%); padding: 2px 8px; border-radius: 999px; font-size: 11px; font-variant-numeric: tabular-nums; color: #fff; background: rgba(0,0,0,.7); white-space: nowrap; pointer-events: none; }
+/* the tool's options under the sizes: the text's background, outline and font; the piece's keep-the-original */
+.ie-opts { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ie-opt-bg { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 16px; border-radius: 3px; font: 700 11px/1 system-ui, sans-serif; box-shadow: inset 0 0 0 1px var(--line); }
+.ie-opt-font { font-size: 12px; font-weight: 600; }
+/* the selection: marching ants */
+.ie-marq { position: absolute; box-sizing: border-box; display: block; pointer-events: none;
+  background: linear-gradient(90deg, #fff 50%, #000 0) 0 0 / 10px 1px repeat-x, linear-gradient(90deg, #fff 50%, #000 0) 0 100% / 10px 1px repeat-x,
+    linear-gradient(0deg, #fff 50%, #000 0) 0 0 / 1px 10px repeat-y, linear-gradient(0deg, #fff 50%, #000 0) 100% 0 / 1px 10px repeat-y;
+  animation: ie-ants .6s linear infinite; }
+@keyframes ie-ants { to { background-position: 10px 0, -10px 100%, 0 -10px, 100% 10px; } }
+@media (prefers-reduced-motion: reduce) { .ie-marq { animation: none; } }
+/* each tool's key, small in its corner */
+.ie-tool { position: relative; }
+.ie-tool::after { content: attr(data-key); position: absolute; right: 2px; bottom: 1px; font-size: 8.5px; font-weight: 600; line-height: 1; color: var(--text-4); pointer-events: none; }
+.ie-tool.is-on::after { color: var(--accent); }
+.ie-endbtns { display: flex; align-items: center; gap: 6px; margin-left: 6px; }
+.ie-done:disabled { opacity: .45; filter: grayscale(.6); cursor: default; }

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leonote</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="titlebar">
+        <div class="tb-left">
+          <button class="tb-btn" data-cmd="toggle-sidebar" title="Toggle sidebar (Ctrl+\)"></button>
+          <button class="tb-btn" data-cmd="back" title="Back (Alt+Left)"></button>
+          <button class="tb-btn" data-cmd="forward" title="Forward (Alt+Right)"></button>
+          <button class="tb-btn space-btn" id="space-btn" title="Spaces"></button>
+          <div class="compact-nav" id="compact-nav"></div>
+        </div>
+        <div class="tabs" id="tabs" aria-label="Open tabs"></div>
+        <div class="tb-right">
+          <button class="tb-search" data-cmd="switcher" title="Quick switcher (Ctrl+O) · every command: Ctrl+P"><span class="tb-search-ico"></span><span class="tb-search-label">Search or jump to…</span><kbd>Ctrl O</kbd></button>
+          <button class="tb-btn" data-cmd="toggle-right" title="Toggle details (Ctrl+Shift+\)"></button>
+          <button class="tb-btn" data-cmd="on-top" title="Keep on top"></button>
+          <button class="tb-btn compact-only" data-cmd="to-tray" title="Minimize to tray"></button>
+          <button class="tb-btn" data-cmd="compact" title="Compact mode (Ctrl+Shift+C)"></button>
+          <div class="win">
+            <button class="win-btn" data-win="min" title="Minimize"></button>
+            <button class="win-btn" data-win="max" title="Maximize"></button>
+            <button class="win-btn win-close" data-win="close" title="Quit Leonote"></button>
+          </div>
+        </div>
+      </header>
+      <div class="body">
+        <aside class="sidebar" id="sidebar"></aside>
+        <div class="sb-resizer" id="sb-resizer"></div>
+        <main class="main" id="main">
+          <div class="view view-note" id="view-note">
+            <div class="note-scroll" id="note-scroll">
+              <div class="note-head">
+                <div class="crumbs" id="crumbs"></div>
+                <textarea class="inline-title" id="inline-title" rows="1" spellcheck="false" aria-label="Note name"></textarea>
+              </div>
+              <div class="editor-host" id="editor"></div>
+            </div>
+          </div>
+          <div class="view" id="view-home"></div>
+          <div class="view" id="view-tasks"></div>
+          <div class="view" id="view-habits"></div>
+          <div class="view" id="view-focus"></div>
+          <div class="view" id="view-timer"></div>
+          <div class="view view-file" id="view-file"></div>
+          <div class="view view-file view-ext" id="view-ext"></div>
+          <div class="view" id="view-settings"></div>
+          <div class="view" id="view-graph"></div>
+          <div class="view" id="view-search"></div>
+          <footer class="statusbar" id="statusbar"></footer>
+        </main>
+        <aside class="rightpanel" id="rightpanel"></aside>
+        <aside class="plugin-pane" id="plugin-pane" hidden></aside>
+      </div>
+    </div>
+    <div id="overlay-root"></div>
+    <div id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

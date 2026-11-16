@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leonote viewer</title>
+<style>
+  :root { --bg: #0e0e10; --fg: #ececee; --dim: #9a9aa2; --line: rgba(255,255,255,.12); --bar: rgba(16,16,19,.78); --accent: #e0a33b; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 13px/1.4 "Inter Variable", "Segoe UI", system-ui, sans-serif; overflow: hidden; user-select: none; }
+  #stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  #stage.is-panning { cursor: grabbing; }
+  #stage.can-pan { cursor: grab; }
+  #pic { position: absolute; left: 0; top: 0; transform-origin: 0 0; image-rendering: auto; max-width: none; max-height: none; }
+  #vid { max-width: 100%; max-height: 100%; background: #000; outline: none; }
+  .bar { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 4px; padding: 6px 8px; background: var(--bar);
+         backdrop-filter: blur(10px); transition: opacity .18s; z-index: 2; }
+  .top { top: 0; height: 38px; }
+  .bottom { bottom: 0; height: 46px; padding: 6px 12px; }
+  body.idle .bar { opacity: 0; pointer-events: none; }
+  body.idle { cursor: none; }
+  .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px; color: var(--fg); font-weight: 600; }
+  .count { color: var(--dim); font-variant-numeric: tabular-nums; padding: 0 8px; }
+  button { appearance: none; border: 0; background: transparent; color: var(--fg); width: 30px; height: 28px; border-radius: 6px; display: inline-grid; place-items: center; cursor: pointer; padding: 0; }
+  button:hover { background: rgba(255,255,255,.1); }
+  button.is-on { color: var(--accent); }
+  button.close:hover { background: #c42b1c; }
+  svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .time { color: var(--dim); font-variant-numeric: tabular-nums; min-width: 92px; text-align: center; }
+  .seek { flex: 1; height: 22px; display: flex; align-items: center; cursor: pointer; position: relative; }
+  .seek::before { content: ""; position: absolute; left: 0; right: 0; height: 4px; border-radius: 2px; background: var(--line); transition: height .12s; }
+  .seek:hover::before, .seek:hover .fill { height: 7px; }
+  .fill { position: relative; height: 4px; border-radius: 2px; background: var(--accent); width: 0; transition: height .12s; pointer-events: none; }
+  .vol { width: 80px; accent-color: var(--accent); }
+  .note { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: var(--dim); padding: 40px; }
+  .note b { display: block; color: var(--fg); font-size: 15px; margin-bottom: 6px; }
+  .note button { width: auto; padding: 0 12px; margin-top: 12px; border: 1px solid var(--line); }
+  .ask { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #1b1b1f; border: 1px solid var(--line); border-radius: 10px;
+         padding: 18px 20px; z-index: 5; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+  .ask p { margin: 0 0 4px; } .ask small { color: var(--dim); }
+  .zoom { position: absolute; left: 50%; bottom: 60px; transform: translateX(-50%); background: var(--bar); padding: 4px 10px; border-radius: 6px; color: var(--dim); z-index: 3; opacity: 0; transition: opacity .2s; }
+  .zoom.on { opacity: 1; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+  <div id="stage"><img id="pic" alt="" hidden draggable="false"><video id="vid" hidden playsinline></video></div>
+  <div class="bar top" id="top">
+    <span class="name" id="name"></span><span class="count" id="count"></span>
+    <button id="rot" title="Turn (R)"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+    <button id="fit" title="Fit / actual size (0 / 1)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <button id="del" title="To the Recycle Bin (Del)"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>
+    <button id="full" title="Full screen (F, double-click)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path d="M9 9h6v6H9z"/></svg></button>
+    <button id="min" title="Minimise"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+    <button id="max" title="Maximise"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1"/></svg></button>
+    <button id="close" class="close" title="Close (Esc)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="bar bottom" id="bottom" hidden>
+    <button id="play" title="Play / pause (Space, click)"></button>
+    <span class="time" id="time"></span>
+    <div class="seek" id="seek" title="Click or drag to move"><span class="fill" id="fill"></span></div>
+    <button id="loop" title="Loop this video (L)"><svg viewBox="0 0 24 24"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg></button>
+    <button id="mute" title="Mute (M)"></button>
+    <input class="vol" id="vol" type="range" min="0" max="1" step="0.02" value="1" title="Volume (wheel over it)">
+  </div>
+  <div class="zoom" id="zoom"></div>
+  <script src="viewer.js"></script>
+</body>
+</html>

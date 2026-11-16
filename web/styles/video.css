@@ -1,0 +1,390 @@
+/* ── the video editor (.leovideo) ─────────────────────────────────────── */
+.ve { position: relative; height: 100%; display: grid; grid-template-rows: minmax(120px, 1fr) auto var(--ve-tl-h, minmax(150px, 34%)); background: var(--bg); outline: none; overflow: hidden; }
+.ve-top { display: flex; min-height: 0; }
+.ve-stage { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; padding: 14px; background: color-mix(in srgb, var(--bg) 70%, black); }
+/* on the preview: the selected clip's box, its handles, the snap guides */
+.ve-stage-layer { position: absolute; z-index: 2; }
+.ve-sel { position: absolute; box-sizing: border-box; border: 1.5px solid var(--accent); box-shadow: 0 0 0 1px rgba(0, 0, 0, .5); cursor: move; pointer-events: none; }
+.ve-hd { position: absolute; width: 11px; height: 11px; border-radius: 3px; background: #fff; border: 1.5px solid var(--accent); pointer-events: auto; }
+.ve-hd.is-nw { left: -6px; top: -6px; cursor: nwse-resize; } .ve-hd.is-se { right: -6px; bottom: -6px; cursor: nwse-resize; }
+.ve-hd.is-ne { right: -6px; top: -6px; cursor: nesw-resize; } .ve-hd.is-sw { left: -6px; bottom: -6px; cursor: nesw-resize; }
+.ve-rot { position: absolute; left: 50%; top: -26px; width: 13px; height: 13px; margin-left: -7px; border-radius: 50%; background: #fff; border: 1.5px solid var(--accent); cursor: grab; pointer-events: auto; }
+.ve-rot::before { content: ""; position: absolute; left: 5px; top: 12px; width: 1.5px; height: 12px; background: var(--accent); }
+.ve-guides { position: absolute; inset: 0; pointer-events: none; }
+.ve-guide { position: absolute; background: #ff5ca8; }
+.ve-guide.is-x { top: 0; bottom: 0; width: 1px; }
+.ve-guide.is-y { left: 0; right: 0; height: 1px; }
+/* the library */
+.ve-lib { width: var(--ve-lib-w, 232px); flex: none; display: flex; flex-direction: column; gap: 6px; padding: 8px; border-right: 1px solid var(--line); min-height: 0; }
+.ve-lib[hidden] { display: none; }
+.ve-lib.is-drop { box-shadow: inset 0 0 0 2px var(--accent); }
+.ve-lib-tabs { width: 100%; }
+.ve-lib-tabs .seg { flex: 1; padding: 0 4px; }
+.ve-lib-chips { display: flex; flex-wrap: wrap; gap: 3px; }
+.ve-lib-chips[hidden] { display: none; }
+.ve-lib-find { height: 28px; }
+.ve-lib-list { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-content: start; scrollbar-width: thin; }
+.ve-lib-item { display: flex; flex-direction: column; gap: 3px; padding: 4px; border-radius: 8px; cursor: grab; min-width: 0; }
+.ve-lib-item:hover { background: var(--hover); }
+.ve-lib-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: var(--bg-2); display: flex; align-items: center; justify-content: center; color: var(--text-3); }
+.ve-lib-thumb .ico { width: 22px; height: 22px; }
+.ve-lib-thumb.is-video { color: #7b93ff; } .ve-lib-thumb.is-audio { color: #4cc38a; } .ve-lib-thumb.is-studio { color: #e05aa8; }
+.ve-lib-name { font-size: 11px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ve-lib-none { grid-column: 1 / -1; padding: 8px; color: var(--text-3); font-size: 12px; line-height: 1.45; }
+.ve-lib-foot { display: flex; align-items: center; gap: 6px; font-size: 11.5px; }
+.ve-canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; border-radius: 0; box-shadow: 0 8px 28px rgba(0, 0, 0, .45); background: #000; }
+.ve-side { width: var(--ve-side-w, 300px); flex: none; overflow-y: auto; padding: 10px 12px 16px; border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; scrollbar-width: thin; }
+.ve-side-head { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; color: var(--text); min-width: 0; }
+.ve-side-head span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ve-side-head .ico { width: 15px; height: 15px; color: var(--accent); flex: none; }
+.ve-sec { margin-top: 8px; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--text-4); }
+.ve-row { display: flex; align-items: center; gap: 8px; min-height: 28px; font-size: 12.5px; }
+.ve-lab { width: 74px; flex: none; color: var(--text-3); }
+.ve-row input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); }
+.ve-row select, .ve-row .input { flex: 1; min-width: 0; }
+.ve-row select { height: 28px; }
+.ve-row input[type="color"] { width: 34px; height: 26px; padding: 0; border: 0; background: none; }
+.ve-val { width: 50px; flex: none; text-align: right; color: var(--text-3); font-variant-numeric: tabular-nums; font-size: 11.5px; }
+.ve-val { cursor: text; border-radius: 5px; padding: 1px 3px; }
+.ve-val:hover { background: var(--hover); color: var(--text); }
+.ve-val-in { width: 50px; flex: none; padding: 1px 4px; border-radius: 5px; border: 1px solid var(--accent-soft); background: var(--surface); color: var(--text); font: inherit; font-size: 11.5px; text-align: right; font-variant-numeric: tabular-nums; outline: none; }
+.ve-dim { color: var(--text-3); font-size: 12px; margin: 0; }
+.ve-help { line-height: 1.5; margin-top: 8px; }
+.ve-live { flex-wrap: wrap; }
+.ve-text { width: 100%; resize: vertical; min-height: 52px; font: inherit; font-size: 13px; }
+.ve-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.ve-chip { height: 24px; padding: 0 8px; border-radius: 12px; font-size: 11.5px; color: var(--text-2); background: var(--hover); }
+.ve-chip:hover { color: var(--text); }
+.ve-chip.is-on { color: var(--accent); background: var(--accent-wash); }
+.ve-row .segmented { flex: 1; }
+
+.ve-bar { display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--bg-2); flex-wrap: wrap; }
+.ve-bar .btn .ico { width: 13px; height: 13px; }
+.ve-sep { width: 1px; height: 18px; background: var(--line); margin: 0 4px; }
+.ve-gap { flex: 1; }
+.ve-play.is-on { color: var(--accent); }
+.ve-time { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 92px; text-align: center; }
+
+.ve-tl { position: relative; display: flex; min-height: 0; overflow: hidden; }
+.ve-heads-col { width: 128px; flex: none; border-right: 1px solid var(--line); overflow: hidden; }
+.ve-heads-top { height: 24px; border-bottom: 1px solid var(--line); }
+.ve-head { height: var(--ve-lane-h, 44px); display: flex; align-items: center; gap: 2px; padding: 0 4px 0 10px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--text-2); }
+.ve-head.is-audio { height: calc(var(--ve-lane-h, 44px) - 8px); }
+.ve-head-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ve-head .icon-btn { width: 22px; height: 22px; }
+.ve-head .icon-btn.is-off { color: var(--text-4); opacity: .6; }
+.ve-head-add { display: flex; gap: 10px; padding: 6px 10px; font-size: 11.5px; }
+.ve-tl-scroll { position: relative; flex: 1; min-width: 0; overflow: auto; scrollbar-width: thin; }
+.ve-ruler { position: sticky; top: 0; z-index: 2; height: 24px; border-bottom: 1px solid var(--line); background: var(--bg-2); cursor: ew-resize; }
+.ve-tick { position: absolute; top: 0; height: 100%; padding-left: 4px; border-left: 1px solid var(--line-strong); font-size: 10.5px; line-height: 24px; color: var(--text-4); font-variant-numeric: tabular-nums; pointer-events: none; }
+.ve-lanes { position: relative; }
+.ve-lane { position: relative; height: var(--ve-lane-h, 44px); border-bottom: 1px solid var(--line); }
+.ve-lane.is-audio { height: calc(var(--ve-lane-h, 44px) - 8px); background: color-mix(in srgb, var(--bg-2) 55%, transparent); }
+.ve-clip { position: absolute; top: 4px; bottom: 4px; display: flex; align-items: center; gap: 5px; padding: 0 8px; border-radius: 6px; overflow: hidden; font-size: 11.5px; color: #fff; cursor: grab; user-select: none; background: #3e63dd; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); }
+.ve-clip.is-video { background: #3e63dd; }
+.ve-clip.is-image { background: #8e4ec6; }
+.ve-clip.is-gif { background: #ab4aba; }
+.ve-clip.is-studio { background: #c2298a; }
+.ve-clip.is-text { background: #b8860b; }
+.ve-clip.is-audio { background: #30a46c; }
+.ve-clip.is-sel { box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px var(--accent); z-index: 1; }
+.ve-clip .ico { width: 12px; height: 12px; flex: none; opacity: .9; }
+.ve-clip-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ve-clip-edge { position: absolute; top: 0; bottom: 0; width: 7px; cursor: ew-resize; }
+.ve-clip-edge.is-l { left: 0; }
+.ve-clip-edge.is-r { right: 0; }
+/* trim handles: a thin bar inside the edge, on hover */
+.ve-clip-edge::after { content: ""; position: absolute; top: 25%; bottom: 25%; width: 2px; border-radius: 2px; background: rgba(255, 255, 255, .85); opacity: 0; transition: opacity .12s; }
+.ve-clip-edge.is-l::after { left: 2px; }
+.ve-clip-edge.is-r::after { right: 2px; }
+.ve-clip:hover .ve-clip-edge::after { opacity: .45; }
+.ve-clip .ve-clip-edge:hover::after { opacity: 1; top: 15%; bottom: 15%; }
+.ve-clip-x { position: absolute; left: 0; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .35) 0 3px, transparent 3px 7px); border-right: 1px solid rgba(255, 255, 255, .6); pointer-events: none; }
+.ve-clip-live { margin-left: auto; padding: 0 5px; border-radius: 4px; background: rgba(0, 0, 0, .3); font-size: 10px; letter-spacing: .04em; }
+.ve-playhead { position: absolute; top: 0; bottom: 0; width: 1px; margin-left: -.5px; background: var(--accent); pointer-events: none; z-index: 3; }
+/* its head: a small pointer on the ruler, its tip on the exact moment */
+.ve-playhead::before { content: ""; position: sticky; top: 0; display: block; width: 11px; height: 13px; margin-left: -5px; background: var(--accent); clip-path: polygon(0 0, 100% 0, 100% 62%, 50% 100%, 0 62%); border-radius: 2px 2px 0 0; }
+
+.ve-pick { width: 420px; padding: 8px; display: flex; flex-direction: column; gap: 6px; opacity: 1; transform: none; }
+.ve-pick-find { height: 30px; }
+.ve-pick-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; scrollbar-width: thin; }
+.ve-pick-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 7px; font-size: 12.5px; text-align: left; min-width: 0; }
+.ve-pick-item:hover { background: var(--hover); }
+.ve-pick-item .ico { width: 14px; height: 14px; flex: none; color: var(--text-3); }
+.ve-pick-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.ve-pick-dir { margin-left: auto; flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--text-4); }
+.ve-pick-none { padding: 10px; color: var(--text-3); font-size: 12.5px; }
+
+.ve-rec { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 5; display: none; align-items: center; gap: 10px; padding: 6px 8px 6px 12px; border-radius: 10px; background: var(--surface-2); box-shadow: var(--shadow-lg); font-size: 12.5px; }
+.ve.is-recording .ve-rec { display: flex; }
+.ve-rec-dot { width: 9px; height: 9px; border-radius: 50%; background: #e5484d; animation: veRec 1s infinite; }
+@keyframes veRec { 50% { opacity: .3; } }
+.ve.is-recording .ve-bar, .ve.is-recording .ve-tl, .ve.is-recording .ve-side { pointer-events: none; opacity: .55; }
+.ve-tl-scroll.is-drop, .ve-stage.is-drop { box-shadow: inset 0 0 0 2px var(--accent); }
+
+/* keyframes and waveforms on the timeline */
+.ve-key { position: absolute; top: 50%; width: 9px; height: 9px; margin: -5px 0 0 -5px; transform: rotate(45deg); background: #ffd23f; box-shadow: 0 0 0 1px rgba(0, 0, 0, .5); border-radius: 1px; cursor: pointer; z-index: 2; }
+.ve-key:hover { background: #fff; }
+.ve-wave { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.ve-clip-name, .ve-clip .ico { position: relative; z-index: 1; }
+.ve-keys { flex-wrap: wrap; }
+.ve-side .ve-row:has(> .btn), .ve-keys { flex-wrap: wrap; height: auto; padding: 2px 0; }
+.ve-side .ve-row > .ve-dim { flex: 1 1 140px; min-width: 0; }
+.ve-side > * { flex-shrink: 0; }
+.ve-beat { position: absolute; bottom: 0; width: 2px; height: 8px; margin-left: -1px; background: #ff5ca8; border-radius: 1px; pointer-events: none; }
+.ve-marker { position: absolute; top: 0; height: 100%; width: 1px; margin-left: -.5px; background: #ffd23f; cursor: pointer; z-index: 2; }
+.ve-marker::before { content: ""; position: absolute; top: 0; left: -3.5px; border: 4px solid transparent; border-top-color: #ffd23f; }
+.ve-marker-name { position: absolute; top: 2px; left: 6px; font-size: 10px; color: #ffd23f; white-space: nowrap; pointer-events: none; }
+
+/* a video clip's frames along it, a picture's picture: the name on a dark band stays readable */
+.ve-frames { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: .9; }
+.ve-clip.has-pic { background-size: auto 100%; background-repeat: repeat-x; }
+.ve-clip.has-frames .ve-clip-name, .ve-clip.has-pic .ve-clip-name { position: relative; padding: 1px 5px; border-radius: 4px; background: rgba(0, 0, 0, .55); }
+.ve-clip.has-frames > .ico, .ve-clip.has-pic > .ico { position: relative; filter: drop-shadow(0 0 2px rgba(0, 0, 0, .8)); }
+/* the project's export settings and the keys, folded until wanted */
+.ve-fold { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 6px; }
+.ve-fold > summary { cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-2); padding: 4px 0; }
+.ve-fold[open] > summary { margin-bottom: 6px; }
+.ve-tool .ico { width: 14px; height: 14px; }
+/* the words on the bar's tools give way when the editor is narrow; the library's tabs stay whole */
+.ve { container-type: inline-size; }
+@container (max-width: 1180px) { .ve-tool-t { display: none; } }
+.ve-lib-fold { flex: none; width: 24px; height: 24px; margin-left: -4px; }
+/* the edges between the panels and the preview: drag to resize, double-click to fold */
+.ve-grip { flex: none; width: 6px; margin: 0 -3px; z-index: 3; cursor: col-resize; position: relative; }
+.ve-grip:hover::after { content: ""; position: absolute; inset: 0 2px; background: var(--accent); opacity: .5; border-radius: 2px; }
+.ve-lib[hidden], .ve-side[hidden] { display: none; }
+/* the preview zoomed by itself */
+.ve-stage { overflow: hidden; }
+.ve-stage canvas { transform-origin: center; }
+.ve-zoom-chip { position: absolute; right: 10px; bottom: 10px; z-index: 4; padding: 3px 9px; border-radius: 99px; font-size: 11.5px; background: color-mix(in srgb, var(--surface-2) 90%, transparent); box-shadow: var(--shadow-sm); color: var(--text-2); }
+.ve-swatch { width: 34px; height: 20px; border-radius: 5px; box-shadow: inset 0 0 0 1px var(--line-strong); }
+/* each edge's fold button: on hover while open, always while folded (then the edge is a strip to click) */
+.ve-grip { display: flex; align-items: center; justify-content: center; }
+.ve-grip-btn { position: relative; z-index: 2; width: 16px; height: 34px; border-radius: 6px; display: grid; place-items: center; background: var(--surface-2); box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line); opacity: 0; transition: opacity .12s; cursor: pointer; }
+.ve-grip:hover .ve-grip-btn { opacity: 1; }
+.ve-grip-btn .ico { width: 12px; height: 12px; }
+.ve-grip.is-l .ve-grip-btn .ico { transform: rotate(180deg); }
+.ve-grip.is-folded { width: 18px; margin: 0; cursor: default; background: var(--bg-2); }
+.ve-grip.is-l.is-folded { border-right: 1px solid var(--line); }
+.ve-grip.is-r.is-folded { border-left: 1px solid var(--line); }
+.ve-grip.is-folded .ve-grip-btn { opacity: 1; }
+.ve-grip.is-folded:hover::after { display: none; }
+.ve-grip.is-l.is-folded .ve-grip-btn .ico { transform: none; }
+.ve-grip.is-r.is-folded .ve-grip-btn .ico { transform: rotate(180deg); }
+/* the timeline's top edge */
+.ve-top { position: relative; }
+.ve-tl-grip { position: absolute; left: 0; right: 0; bottom: -3px; height: 6px; z-index: 6; cursor: row-resize; }
+.ve-tl-grip:hover { background: color-mix(in srgb, var(--accent) 50%, transparent); }
+/* the timeline's scrollbars: thin and quiet, stronger under the pointer */
+.ve-tl-scroll { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text) 22%, transparent) transparent; }
+.ve-tl-scroll:hover { scrollbar-color: color-mix(in srgb, var(--text) 38%, transparent) transparent; }
+.ve-tl-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.ve-tl-scroll::-webkit-scrollbar-thumb { border-radius: 8px; background: color-mix(in srgb, var(--text) 22%, transparent); border: 2px solid transparent; background-clip: padding-box; }
+.ve-tl-scroll::-webkit-scrollbar-track, .ve-tl-scroll::-webkit-scrollbar-corner { background: transparent; }
+.ve-tl-scroll::-webkit-scrollbar-button { display: none; }
+/* Edit with AI: its own panel at the right of the preview */
+.ve-ai { width: var(--ve-ai-w, 320px); flex: none; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-left: 1px solid var(--line); min-height: 0; }
+.ve-ai[hidden] { display: none; }
+.ve-ai-log { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; scrollbar-width: thin; }
+.ve-ai-msg { padding: 7px 10px; border-radius: 9px; font-size: 12.5px; line-height: 1.45; white-space: pre-wrap; user-select: text; }
+.ve-ai-msg.is-you { align-self: flex-end; max-width: 90%; background: var(--accent-wash); color: var(--text); }
+.ve-ai-msg.is-ai { background: var(--surface-2); color: var(--text-2); }
+.ve-ai-msg.is-wait { color: var(--text-3); font-style: italic; }
+.ve-ai-msg.is-done { background: color-mix(in srgb, #46a758 14%, transparent); color: var(--text-2); }
+.ve-ai-msg.is-look { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--text-2); }
+.ve-ai-msg.is-err { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--text-2); }
+.ve-ai-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.ve-ai-in { width: 100%; resize: vertical; min-height: 54px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; font-size: 12.5px; }
+.ve-ai-acts { display: flex; align-items: center; gap: 6px; }
+.ve-ai-speech { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; padding: 8px 10px; border-radius: 9px; font-size: 12.5px; color: var(--text-2); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.ve-ai-speech[hidden] { display: none; }
+.ve-tx { flex: 1; min-height: 0; overflow-y: auto; font-size: 13.5px; line-height: 1.7; user-select: text; outline: none; scrollbar-width: thin; }
+.ve-tx[hidden] { display: none; }
+.ve-tx p { margin: 6px 0 0; }
+.ve-tx-w { cursor: pointer; border-radius: 3px; }
+.ve-tx-w:hover { background: var(--accent-wash); }
+.ve-tx-gap, .ve-tx-cut { display: inline-block; margin: 0 3px; padding: 0 5px; border-radius: 6px; font-size: 11px; line-height: 1.5; color: var(--text-3); background: var(--surface-2); cursor: pointer; user-select: none; }
+.ve-tx-cut { cursor: default; }
+.ve-tx-w.is-now { background: var(--accent); color: var(--on-accent, #000); }
+/* what the editor draws over the frame: never exported */
+.ve-frame-guides { position: absolute; inset: 0; pointer-events: none; }
+.ve-frame-guides.is-edge-bright { box-shadow: 0 0 0 1px rgba(255, 255, 255, .85), 0 0 0 2px rgba(0, 0, 0, .6); }
+.ve-frame-guides.is-edge-accent { box-shadow: 0 0 0 2px var(--accent); }
+.ve-frame-guides.is-edge-subtle { box-shadow: 0 0 0 1px rgba(255, 255, 255, .25); }
+.ve-fg-line { position: absolute; background: rgba(255, 255, 255, .35); }
+.ve-fg-line.is-x { top: 0; bottom: 0; width: 1px; }
+.ve-fg-line.is-y { left: 0; right: 0; height: 1px; }
+.ve-fg-line.is-mid { background: rgba(255, 210, 90, .55); }
+.ve-fg-safe { position: absolute; border: 1px dashed rgba(255, 255, 255, .35); }
+.ve-fg-safe.is-title { border-color: rgba(120, 200, 255, .45); }
+.ve-info { position: absolute; left: 10px; top: 10px; z-index: 4; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--text-3); background: color-mix(in srgb, var(--surface-2) 85%, transparent); }
+.ve-info:hover { color: var(--text); }
+/* the AI panel's grip goes with the panel */
+.ve-grip.is-a:has(+ .ve-ai[hidden]) { display: none; }
+.ve-grip.is-a .ve-grip-btn .ico { transform: none; }
+/* the panels swapped: library right, clip panel and AI left */
+.ve.is-flip .ve-top { flex-direction: row-reverse; }
+.ve.is-flip .ve-lib { border-right: 0; border-left: 1px solid var(--line); }
+.ve.is-flip .ve-side, .ve.is-flip .ve-ai { border-left: 0; border-right: 1px solid var(--line); }
+.ve.is-flip .ve-grip.is-l .ve-grip-btn .ico { transform: none; }
+.ve.is-flip .ve-grip.is-r .ve-grip-btn .ico, .ve.is-flip .ve-grip.is-a .ve-grip-btn .ico { transform: rotate(180deg); }
+.ve.is-flip .ve-grip.is-l.is-folded .ve-grip-btn .ico { transform: rotate(180deg); }
+.ve.is-flip .ve-grip.is-r.is-folded .ve-grip-btn .ico { transform: none; }
+/* sliders: a thin line, filled up to a small round knob */
+.ve input.ve-range { -webkit-appearance: none; appearance: none; height: 16px; background: transparent; cursor: pointer; }
+.ve input.ve-range::-webkit-slider-runnable-track { height: 3px; border-radius: 3px; background: linear-gradient(to right, var(--accent) var(--p, 50%), color-mix(in srgb, var(--text) 16%, transparent) var(--p, 50%)); }
+.ve input.ve-range::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4.5px; border-radius: 50%; background: var(--text); border: 0; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 0%, transparent), 0 1px 3px rgba(0, 0, 0, .4); transition: transform .12s, box-shadow .12s; }
+.ve input.ve-range:hover::-webkit-slider-thumb { transform: scale(1.15); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent), 0 1px 3px rgba(0, 0, 0, .4); }
+.ve input.ve-range:active::-webkit-slider-thumb { transform: scale(1.25); background: var(--accent); }
+.ve input.ve-range:focus-visible { outline: none; }
+.ve input.ve-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--accent-wash); }
+/* the ruler: a tick for every label (--mj), a half tick (--md), small ticks or frames (--mn) */
+.ve-ruler { --tc: color-mix(in srgb, var(--text) 30%, transparent); background-image: linear-gradient(to right, var(--tc) 1px, transparent 1px), linear-gradient(to right, var(--tc) 1px, transparent 1px), linear-gradient(to right, color-mix(in srgb, var(--text) 16%, transparent) 1px, transparent 1px); background-size: var(--mj, 60px) 100%, var(--md, 30px) 9px, var(--mn, 6px) 5px; background-repeat: repeat-x; background-position: 0 0, 0 100%, 0 100%; }
+.ve-tick { border-left: 0; }
+/* every scroll bar in the editor: a thin line that shows on hover */
+.ve *, .ve { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.ve *:hover { scrollbar-color: color-mix(in srgb, var(--text) 25%, transparent) transparent; }
+.ve ::-webkit-scrollbar { width: 6px; height: 6px; }
+.ve ::-webkit-scrollbar-thumb { border-radius: 6px; background: transparent; }
+.ve :hover::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text) 25%, transparent); }
+.ve ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--text) 45%, transparent); }
+.ve ::-webkit-scrollbar-track, .ve ::-webkit-scrollbar-corner { background: transparent; }
+.ve ::-webkit-scrollbar-button { display: none; }
+/* around the frame */
+.ve-stage[data-back="black"] { background: #000; }
+.ve-stage[data-back="grey"] { background: #4a4a4f; }
+.ve-stage[data-back="checker"] { background: repeating-conic-gradient(#2a2a2e 0 25%, #1f1f22 0 50%) 0 0 / 20px 20px; }
+.ve-stage.no-shadow .ve-canvas { box-shadow: none; }
+.ve-stage { cursor: default; }
+.ve-frame-guides.has-grid { background-image: linear-gradient(to right, rgba(255, 255, 255, .16) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, .16) 1px, transparent 1px); background-size: var(--grid) var(--grid); }
+.ve-dims { position: absolute; left: 50%; top: 100%; margin-top: 6px; transform: translateX(-50%); padding: 1px 6px; border-radius: 5px; font-size: 10.5px; white-space: nowrap; font-variant-numeric: tabular-nums; color: #fff; background: rgba(0, 0, 0, .7); pointer-events: none; }
+.ve-dims[hidden] { display: none; }
+.ve-grads { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 10px; }
+.ve-grad { aspect-ratio: 1; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); transition: transform .12s; }
+.ve-grad:hover { transform: scale(1.08); }
+.ve-grad.is-on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+/* watching it full screen: the video alone */
+.ve-stage:fullscreen { padding: 0; background: #000; }
+.ve-stage:fullscreen .ve-canvas { transform: none !important; border-radius: 0; box-shadow: none; }
+.ve-stage:fullscreen > :not(canvas):not(.ve-fs-bar), .ve-stage:not(:fullscreen) > .ve-fs-bar { display: none !important; }
+.ve-stage.mp-unit:fullscreen { justify-content: center; align-items: center; }
+.ve-stage.mp-unit:fullscreen .ve-canvas { max-width: 100vw; max-height: 100vh; }
+.ve-ai-msg.is-copy { cursor: copy; }
+.ve-tl-scroll.is-pan, .ve-tl-scroll.is-pan * { cursor: grabbing !important; }
+.ve-stage[data-back="light"] { background: #c9c9ce; }
+.ve-stage[data-back="white"] { background: #f4f4f6; }
+.ve-stage[data-back="blue"] { background: #10182b; }
+.ve-stage[data-back="green"] { background: #1f8f3a; }
+/* rulers outside the frame (top and left), in the video's pixels */
+.ve-ruler-x, .ve-ruler-y { position: absolute; pointer-events: none; color: rgba(255, 255, 255, .6); font-size: 9.5px; font-variant-numeric: tabular-nums; --tc: rgba(255, 255, 255, .45); }
+.ve-ruler-x[hidden], .ve-ruler-y[hidden] { display: none; }
+.ve-ruler-x { left: 0; right: 0; bottom: 100%; height: 16px; margin-bottom: 3px; background: linear-gradient(to right, var(--tc) 1px, transparent 1px) 0 100% / var(--mj) 8px repeat-x, linear-gradient(to right, var(--tc) 1px, transparent 1px) 0 100% / var(--mn) 3px repeat-x; }
+.ve-ruler-y { top: 0; bottom: 0; right: 100%; width: 16px; margin-right: 3px; background: linear-gradient(to bottom, var(--tc) 1px, transparent 1px) 100% 0 / 8px var(--mj) repeat-y, linear-gradient(to bottom, var(--tc) 1px, transparent 1px) 100% 0 / 3px var(--mn) repeat-y; }
+.ve-rl { position: absolute; line-height: 1; white-space: nowrap; }
+.ve-ruler-x .ve-rl { top: 0; padding-left: 3px; }
+.ve-ruler-y .ve-rl { left: 0; transform: rotate(-90deg) translateX(-100%); transform-origin: 0 0; padding-left: 3px; }
+.ve-rl-sel { position: absolute; background: color-mix(in srgb, var(--accent) 45%, transparent); }
+.ve-ruler-x .ve-rl-sel { bottom: 0; height: 4px; }
+.ve-ruler-y .ve-rl-sel { right: 0; width: 4px; }
+.ve-stage[data-back="light"] .ve-ruler-x, .ve-stage[data-back="light"] .ve-ruler-y, .ve-stage[data-back="white"] .ve-ruler-x, .ve-stage[data-back="white"] .ve-ruler-y { color: rgba(0, 0, 0, .6); --tc: rgba(0, 0, 0, .4); }
+.ve-stage-layer { overflow: visible; }
+.ve-stage.has-rulers { padding: 30px 14px 14px 30px; }
+.ve-stage.has-rulers .ve-info { top: auto; bottom: 10px; }
+/* around the frame: soft gradients */
+.ve-stage[data-back="aurora"] { background: radial-gradient(120% 90% at 15% 0%, #2c2350 0%, transparent 55%), radial-gradient(100% 80% at 100% 100%, #123a4a 0%, transparent 55%), #121216; }
+.ve-stage[data-back="dusk"] { background: linear-gradient(160deg, #2b1f3d 0%, #1a1a24 45%, #3a2420 100%); }
+.ve-grad-own { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.ve-grad-in { width: 30px; height: 26px; padding: 0; border: 0; border-radius: 7px; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15); }
+.ve-grad-in.is-on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+.ve-grad-own .segmented { margin-left: auto; }
+/* a text edited on the frame: the field is see-through, the frame draws the words */
+.ve-intext { position: absolute; box-sizing: border-box; margin: 0; padding: 0; border: 1.5px dashed var(--accent); border-radius: 4px; background: rgba(0, 0, 0, .12); color: transparent; caret-color: var(--accent); resize: none; outline: none; overflow: hidden; white-space: pre-wrap; z-index: 3; pointer-events: auto; }
+.ve-intext::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); color: transparent; }
+.ve-swatch { width: 30px; height: 22px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18); cursor: pointer; }
+.ve-look { background: var(--lk-bg); color: var(--lk-c); font-weight: 700; text-shadow: 0 1px 2px rgba(0, 0, 0, .6); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); }
+.ve-stage:fullscreen { outline: none; }
+.ve-stage.mp-unit:fullscreen .ve-canvas { cursor: pointer; }
+/* the keys, small on the bar's buttons (right-click the bar to hide them) */
+.ve-kbd { position: static; transform: none; display: inline-block; margin-left: 5px; padding: 0 4px; border-radius: 4px; font-size: 9.5px; font-weight: 600; line-height: 15px; color: var(--text-4); box-shadow: inset 0 0 0 1px var(--line); white-space: nowrap; background: none; width: auto; height: auto; cursor: inherit; }
+.ve-bar .icon-btn { position: relative; }
+.ve.no-keys .ve-kbd { display: none; }
+@container (max-width: 1180px) { .ve-kbd { display: none; } }
+/* the signature backdrop: Leonote's amber at dusk */
+.ve-stage[data-back="leonote"] { background: radial-gradient(90% 70% at 100% 100%, rgba(232, 163, 61, .22) 0%, transparent 60%), radial-gradient(80% 70% at 0% 0%, rgba(124, 92, 196, .22) 0%, transparent 60%), linear-gradient(160deg, #241c33 0%, #17161d 50%, #2a2016 100%); }
+.ve-lib-free { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.ve-free { display: grid; grid-template-columns: 16px 1fr; gap: 0 8px; align-items: center; padding: 6px 8px; border-radius: 8px; text-align: left; color: var(--text-2); }
+.ve-free:hover { background: var(--hover); color: var(--text); }
+.ve-free .ico { width: 14px; height: 14px; grid-row: span 2; color: var(--text-4); }
+.ve-free b { font-size: 12px; font-weight: 600; }
+.ve-free span { font-size: 11px; color: var(--text-4); }
+/* the Music tab: a list of songs, then where to find more */
+.ve-lib-list.is-music { display: flex; flex-direction: column; gap: 1px; }
+.ve-lib-item.is-song { flex-direction: row; align-items: center; gap: 8px; padding: 5px 6px; cursor: pointer; }
+.ve-lib-item.is-song:hover { background: var(--hover); }
+.ve-lib-item.is-song .ve-lib-thumb { width: 26px; height: 26px; flex: none; aspect-ratio: auto; border-radius: 6px; }
+.ve-lib-item.is-song .ve-lib-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ve-lib-tabs .seg { font-size: 11.5px; padding: 0 3px; }
+.ve-grad-in.is-mid { display: grid; place-items: center; font-size: 14px; color: var(--text-3); }
+.ve-grads { grid-template-columns: repeat(8, 1fr); }
+/* the frame's shadow, deeper on the darker backdrops */
+.ve-stage:not(.no-shadow) .ve-canvas { box-shadow: 0 18px 48px rgba(0, 0, 0, .55), 0 2px 8px rgba(0, 0, 0, .4); }
+.ve-lib .ve-lib-tabs .seg { min-width: 0; padding: 0 2px; font-size: 11px; letter-spacing: -.01em; }
+.ve-music-pop { width: 320px; max-height: 70vh; display: flex; flex-direction: column; gap: 6px; }
+.ve-music-pop .ve-music-list { max-height: 52vh; overflow-y: auto; }
+.ve-grads.is-mine { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.ve-grads.is-mine[hidden] { display: none; }
+.ve-grad-own .btn { margin-left: 4px; }
+/* the signature backdrop, softer */
+.ve-stage[data-back="leonote"] { background: radial-gradient(70% 55% at 85% 100%, rgba(232, 163, 61, .16) 0%, transparent 70%), radial-gradient(70% 60% at 10% 0%, rgba(124, 92, 196, .2) 0%, transparent 70%), linear-gradient(165deg, #201a2c 0%, #16151b 55%, #1f1913 100%); }
+/* the loudness curve on a clip: its line and points */
+.ve-vol-line { position: absolute; left: 0; top: 2px; bottom: 2px; width: 100%; height: calc(100% - 4px); pointer-events: none; overflow: visible; }
+.ve-vol-line polyline { fill: none; stroke: #fff; stroke-width: 1.5; vector-effect: non-scaling-stroke; opacity: .85; }
+.ve-vol-dot { position: absolute; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .45); pointer-events: none; }
+.ve-look.is-mine .ico { width: 11px; height: 11px; margin-right: 3px; }
+/* the signature backdrop: plum, a violet light from the top left, amber low on the right, the edges a shade darker */
+.ve-stage[data-back="leonote"] { background: radial-gradient(60% 50% at 82% 96%, rgba(232, 163, 61, .17) 0%, transparent 72%), radial-gradient(55% 50% at 14% 8%, rgba(146, 108, 226, .2) 0%, transparent 72%), radial-gradient(130% 100% at 50% 45%, transparent 55%, rgba(0, 0, 0, .32) 100%), linear-gradient(160deg, #1f182c 0%, #15141a 55%, #1c1713 100%); }
+.ve-ai-top.is-on { color: var(--accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent); }
+/* the signature backdrop, one blend: violet into plum into a warm amber dusk - no spots of light */
+.ve-stage[data-back="leonote"] { background: radial-gradient(140% 110% at 50% 50%, transparent 55%, rgba(0, 0, 0, .3) 100%), linear-gradient(140deg, #2a1f3c 0%, #1d1828 35%, #1a1720 55%, #241b1d 78%, #2e2116 100%); }
+
+/* the end of the video, on the timeline: drag it */
+.ve-endline { position: absolute; top: 0; bottom: 0; width: 9px; margin-left: -4px; z-index: 3; cursor: ew-resize; background: linear-gradient(90deg, transparent 4px, color-mix(in srgb, var(--danger, #e5534b) 70%, transparent) 4px 5px, transparent 5px); }
+.ve-endline::before { content: ""; position: sticky; top: 0; display: block; width: 9px; height: 12px; background: var(--danger, #e5534b); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 70%, 0 100%); opacity: .85; }
+.ve-endline.is-set::before { opacity: 1; box-shadow: 0 0 6px var(--danger, #e5534b); }
+.ve-endline:hover { background: linear-gradient(90deg, transparent 3px, var(--danger, #e5534b) 3px 6px, transparent 6px); }
+.ve-text-wrap { position: relative; }
+.ve-text-wrap .ve-text { width: 100%; box-sizing: border-box; padding-right: 30px; }
+.ve-text-emo { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; font-size: 14px; opacity: .7; }
+.ve-text-emo:hover { opacity: 1; }
+
+/* the start line: the end line's twin, pointing the other way */
+.ve-endline.is-start { background: linear-gradient(90deg, transparent 4px, color-mix(in srgb, #3fb27f 70%, transparent) 4px 5px, transparent 5px); }
+.ve-endline.is-start::before { background: #3fb27f; opacity: .55; }
+.ve-endline.is-start.is-set::before { opacity: 1; box-shadow: 0 0 6px #3fb27f; }
+.ve-endline.is-start:hover { background: linear-gradient(90deg, transparent 3px, #3fb27f 3px 6px, transparent 6px); }
+
+/* clips over each other on one track: each in its own row, with a mark where they cross */
+.ve-clip.is-stacked { font-size: 10.5px; padding: 0 6px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .2), 0 1px 0 rgba(0, 0, 0, .35); }
+.ve-clip.is-stacked .ico { width: 11px; height: 11px; }
+.ve-row .segmented.is-wrap { flex-wrap: wrap; height: auto; row-gap: 2px; }
+
+.ve-intext::selection { color: inherit; }
+.ve-playhead { box-shadow: 0 0 0 1px rgba(0, 0, 0, .55); }
+.ve-playhead::before { filter: drop-shadow(0 0 1px rgba(0, 0, 0, .9)) drop-shadow(0 0 1px rgba(0, 0, 0, .6)); }
+
+/* linked clips: a mark on each, and the partners of the selected one outlined */
+.ve-clip-link { display: inline-flex; flex: none; opacity: .85; }
+.ve-clip-link .ico { width: 11px; height: 11px; }
+.ve-clip.is-linked { box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .7); }
+
+/* the look switched on in this video */
+.ve-chip.ve-look.is-on { box-shadow: 0 0 0 2px var(--accent); }
+.ve-chip.ve-look .ico { width: 11px; height: 11px; color: var(--accent); }
+/* a Look's chip under the pointer: a small frame in that look */
+.ve-peek { position: fixed; z-index: 3000; padding: 8px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line-strong), 0 12px 30px rgba(0, 0, 0, .45); pointer-events: none; animation: ve-peek-in var(--dur-2, .16s) var(--ease, ease) both; }
+@keyframes ve-peek-in { from { opacity: 0; transform: translateY(4px) scale(.97); } }
+.ve-peek-frame { display: flex; align-items: flex-end; justify-content: center; padding: 0 6px 18%; border-radius: 7px; overflow: hidden; box-sizing: border-box; }
+.ve-peek-cap { font-size: 15px; font-weight: 800; line-height: 1.15; text-align: center; border-radius: 4px; paint-order: stroke fill; }
+.ve-peek-name { margin-top: 7px; font-size: 12px; font-weight: 600; color: var(--text); }
+.ve-peek-sub { font-size: 11px; color: var(--text-3); }

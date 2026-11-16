@@ -1,0 +1,40 @@
+{
+  "name": "leonote",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node web/build.mjs",
+    "serve": "node web/build.mjs --serve",
+    "test": "node --test web/tests/",
+    "tauri": "tauri",
+    "build-portable": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-portable.ps1",
+    "build-installer": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-installer.ps1",
+    "build-linux": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-linux.ps1",
+    "build-all": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-all.ps1"
+  },
+  "devDependencies": {
+    "@codemirror/autocomplete": "^6.20.4",
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-markdown": "^6.5.2",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/language-data": "^6.5.2",
+    "@codemirror/search": "^6.7.2",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@lezer/highlight": "^1.2.5",
+    "@lezer/markdown": "^1.8.1",
+    "@tauri-apps/cli": "^2",
+    "esbuild": "^0.28.2",
+    "exceljs": "^4.4.0",
+    "jszip": "^3.10.2",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.4.299",
+    "perfect-freehand": "^1.2.3",
+    "roughjs": "^4.6.6"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "Olexify (https://olexify.dev)"
+}

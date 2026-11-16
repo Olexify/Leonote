@@ -1,0 +1,7 @@
+# cargo audit: advisories checked and not reaching Leonote
+[advisories]
+ignore = [
+  # sevenz-rust: path traversal in decompress_impl (decompress/decompress_file). Leonote never calls those -
+  # backup.rs sevenz_extract reads entries with for_each_entries and refuses any name that is not plain parts.
+  "RUSTSEC-2026-0245",
+]

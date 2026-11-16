@@ -1,0 +1,9 @@
+node_modules/
+dist/
+src-tauri/target/
+# machine-specific launch shortcut and its backup
+*.lnk
+old-shortcuts.txt
+# what the build scripts hand over (scripts/)
+release/*
+!release/*.cmd

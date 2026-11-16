@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Leonote video</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0e0f12; color: #ececf1; font: 12px/1 Inter, "Segoe UI", system-ui, sans-serif; user-select: none; }
+  /* the bar: drag the window by it; the video fills the rest, never under 356 x 200 (the window's least) */
+  .bar { position: fixed; left: 0; right: 0; top: 0; height: 28px; display: flex; align-items: center; gap: 2px; padding: 0 4px 0 10px; box-sizing: border-box; cursor: default; }
+  .name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #b8b8bf; }
+  button { all: unset; width: 24px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #b8b8bf; }
+  button:hover { background: rgba(255,255,255,.12); color: #fff; }
+  svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .yt-layer { position: fixed !important; left: 0 !important; right: 0 !important; top: 28px !important; bottom: 0 !important; width: auto !important; height: auto !important; display: block !important; background: #000; }
+  .yt-layer iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+  .msg { position: fixed; left: 0; right: 0; top: 28px; bottom: 0; display: grid; place-items: center; padding: 20px; text-align: center; color: #b8b8bf; line-height: 1.4; }
+  .grip { position: fixed; right: 0; bottom: 0; width: 14px; height: 14px; cursor: nwse-resize; z-index: 5; }
+</style>
+</head>
+<body>
+  <div class="bar" id="bar">
+    <span class="name" id="name">Video</span>
+    <button id="back" title="Back to Leonote (the video goes on there)"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-8 8M10 6H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/></svg></button>
+    <button id="close" title="Close (the video pauses)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="msg" id="msg" hidden></div>
+  <div class="grip" id="grip"></div>
+  <script type="module" src="ytmini.js"></script>
+</body>
+</html>
