@@ -238,6 +238,7 @@ fn glob(pattern: &str, name: &str) -> bool {
     }
     pattern.ends_with('*') || at == name.len()
 }
+#[cfg(windows)]
 fn herr(hr: &Result<(), windows_core::Error>) -> String {
     hr.as_ref().err().map(|e| e.to_string()).unwrap_or_default()
 }
