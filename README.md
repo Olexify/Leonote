@@ -11,14 +11,15 @@ preview editor, no framework, no loading screens.
 
 ## Download
 
-From [Releases](https://github.com/Olexify/Leonote/releases/latest):
+Click one, it downloads the newest version:
 
-| System | File |
+| | |
 | --- | --- |
-| Windows 10 / 11 | `Leonote-<version>-windows-setup.exe` (installer) or `Leonote-<version>-windows-portable.exe` (one file, no install) |
-| Linux (x86-64) | `Leonote-<version>-linux-amd64.deb` (Debian, Ubuntu, Mint) or `Leonote-<version>-linux-x86_64.AppImage` (most others) |
+| **Windows 10 / 11** | [⬇ **Installer**](https://github.com/Olexify/Leonote/releases/latest/download/Leonote-windows-setup.exe) - open it, Leonote installs and starts. Or [one file, no install](https://github.com/Olexify/Leonote/releases/latest/download/Leonote-windows-portable.exe). |
+| **Ubuntu, Debian, Mint** | [⬇ **.deb**](https://github.com/Olexify/Leonote/releases/latest/download/Leonote-linux.deb) - double-click it to install. |
+| **Other Linux** | [⬇ **AppImage**](https://github.com/Olexify/Leonote/releases/latest/download/Leonote-linux.AppImage) - right-click › Properties › allow running as a program, then open it. |
 
-Each file has a `.sha256` next to it. The Windows builds are not code-signed yet, so Windows may show "Windows
+Every version, with checksums (`.sha256`): [all releases](https://github.com/Olexify/Leonote/releases). The Windows builds are not code-signed yet, so Windows may show "Windows
 protected your PC" the first time: **More info › Run anyway**. The Linux build is new: a few features that lean on
 Windows (the phone link, Windows speech, some file previews) are missing or limited there. Problems go to
 [Issues](https://github.com/Olexify/Leonote/issues).
