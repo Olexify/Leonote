@@ -2,6 +2,11 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "script",
   "description": "The script window: a borderless always-on-top window that moves, resizes and closes itself",
+  "platforms": [
+    "windows",
+    "linux",
+    "macOS"
+  ],
   "windows": [
     "script"
   ],

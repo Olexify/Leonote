@@ -5,6 +5,7 @@
 import { syntaxTree } from "@codemirror/language";
 import { Decoration, EditorView, ViewPlugin, WidgetType, keymap } from "@codemirror/view";
 import { StateEffect, StateField, Prec, Transaction } from "@codemirror/state";
+import { undo, redo } from "@codemirror/commands";
 import { WIKI_RE, TAG_RE, isTagName, findHighlights, tableCellHtml, isWebPicture } from "./mdparse.js";
 import { embedAt, setEmbedWidth, embedSide, setEmbedSide } from "./images.js";
 import { icon } from "./icons.js";
@@ -94,10 +95,26 @@ class TableWidget extends WidgetType {
     el.append(t);
     // The editor leaves the mouse here alone, so the table stays drawn: a drag selects its text (the browser will not
     // start a selection inside an uneditable part of the editor, so it is made here), and Ctrl+C copies it (tableCopy).
-    // A plain click opens the source with the caret at the start of the clicked cell.
+    // A click edits the clicked cell in place (editCell); a double-click opens the source with the caret at that cell.
     el.addEventListener("mousedown", (e) => {
       if (e.button !== 0 || e.target.closest("a")) return;
+      const editing = el.querySelector("td.is-editing, th.is-editing");
+      if (editing && e.detail < 2 && editing.contains(e.target)) return; // the caret moves inside the cell being typed in
       e.preventDefault();
+      if (editing && e.detail < 2) { // another cell: what was typed is kept, and that cell is typed in next
+        const to = e.target.closest("td, th");
+        editing.commitEdit(to ? [to.parentElement.rowIndex, to.cellIndex] : null);
+        return;
+      }
+      if (editing) editing.cancelEdit();
+      if (e.detail >= 2) {
+        const cell = e.target.closest("td, th");
+        if (!cell) return;
+        view.focus();
+        const tr = cell.parentElement;
+        view.dispatch({ selection: { anchor: view.posAtDOM(el) + cellOffset(this.src, tr.rowIndex ? tr.rowIndex + 1 : 0, cell.cellIndex) } });
+        return;
+      }
       view.focus();
       const at = (ev) => document.caretRangeFromPoint(ev.clientX, ev.clientY);
       const start = at(e);
@@ -113,8 +130,7 @@ class TableWidget extends WidgetType {
         document.removeEventListener("mouseup", up);
         const cell = e.target.closest("td, th");
         if ((moved && !document.getSelection().isCollapsed) || !cell) return;
-        const tr = cell.parentElement;
-        view.dispatch({ selection: { anchor: view.posAtDOM(el) + cellOffset(this.src, tr.rowIndex ? tr.rowIndex + 1 : 0, cell.cellIndex) } });
+        editCell(view, el, this.src, cell, { x: e.clientX, y: e.clientY });
       };
       document.addEventListener("mousemove", move);
       document.addEventListener("mouseup", up);
@@ -122,6 +138,117 @@ class TableWidget extends WidgetType {
     return el;
   }
   ignoreEvent() { return true; }
+}
+
+/** Where the text of cell `col` in line `line` of a table's source starts and ends (trimmed), from the table's start. */
+export function cellRange(src, line, col) {
+  const a = cellOffset(src, line, col);
+  let b = a;
+  while (b < src.length && src[b] !== "\n" && !(src[b] === "|" && src[b - 1] !== "\\")) b++;
+  while (b > a && src[b - 1] === " ") b--;
+  return [a, b];
+}
+
+/** What is typed into a cell, as its source: one line, a pipe escaped so it stays inside the cell. */
+export const cellSource = (text) => text.replace(/\s*\n\s*/g, " ").replace(/\\?\|/g, "\\|").trim();
+
+/** Where the `shown`-th character of a cell's drawn text is in its source: the marks the drawing hides
+ *  (* _ ` ~ [ ] and escapes) are stepped over. ponytail: a link's (address) counts as text; close enough for a caret. */
+export function sourceOffset(src, shown) {
+  let i = 0;
+  for (let n = 0; i < src.length && n < shown; i++) {
+    if (src[i] === "\\") { i++; n++; continue; }
+    if (!"*_`~[]".includes(src[i])) n++;
+  }
+  return i;
+}
+
+/** Types into a drawn table's cell, in place: its source text to edit, written back on Enter, Tab or a click
+ *  elsewhere; Escape leaves it as it was. Enter goes down a row, Tab to the next cell (Shift+Tab back). */
+function editCell(view, el, src, cell, pt) {
+  const row = cell.parentElement.rowIndex, col = cell.cellIndex;
+  const line = row ? row + 1 : 0;
+  const [a, b] = cellRange(src, line, col);
+  const was = src.slice(a, b), kept = [...cell.childNodes]; // the drawn cell, put back as it was when nothing changed
+  // clicked: the caret goes where the click was, counted in the drawn text (else at the end)
+  let at = was.length;
+  const hit = pt && document.caretRangeFromPoint(pt.x, pt.y);
+  if (hit && cell.contains(hit.startContainer)) {
+    const before = document.createRange();
+    before.selectNodeContents(cell);
+    before.setEnd(hit.startContainer, hit.startOffset);
+    at = sourceOffset(was, before.toString().length);
+  }
+  cell.textContent = was;
+  cell.contentEditable = "true";
+  cell.spellcheck = true;
+  cell.classList.add("is-editing");
+  cell.focus();
+  const range = document.createRange();
+  if (cell.firstChild) range.setStart(cell.firstChild, at); else range.selectNodeContents(cell);
+  range.collapse(true);
+  document.getSelection().removeAllRanges();
+  document.getSelection().addRange(range);
+  let done = false;
+  const end = () => { done = true; cell.removeAttribute("contenteditable"); cell.classList.remove("is-editing"); cell.removeEventListener("keydown", key); cell.removeEventListener("blur", blur); };
+  cell.cancelEdit = () => { if (done) return; end(); cell.replaceChildren(...kept); };
+  cell.commitEdit = (to) => finish(to);
+  // `back`: finished from the keyboard with no cell to go on to - the note gets the keys again (Ctrl+Z undoes the cell)
+  const finish = (to, back) => {
+    if (done) return;
+    const text = cellSource(cell.textContent);
+    end();
+    const start = view.posAtDOM(el);
+    if (!to && back) view.focus();
+    if (text === was) { cell.replaceChildren(...kept); if (to) openCell(view, el, src, to); return; }
+    const nth = [...view.contentDOM.querySelectorAll(".cm-tablew")].indexOf(el); // the redrawn table: the one in its place
+    view.dispatch({ changes: { from: start + a, to: start + b, insert: text + (a === b && src[b] === "|" ? " " : "") }, userEvent: "input.table" });
+    if (to) {
+      const next = src.slice(0, a) + text + (a === b && src[b] === "|" ? " " : "") + src.slice(b); // the table as it now is
+      // the table is drawn again once the parser has read the change: looked for over a few frames
+      let tries = 0;
+      const look = () => {
+        const w = view.contentDOM.querySelectorAll(".cm-tablew")[nth];
+        if (w && w !== el) openCell(view, w, next, to);
+        else if (++tries < 30) setTimeout(look, 16);
+      };
+      setTimeout(look, 0); // a plain timer: a frame callback waits while the window is hidden
+    }
+  };
+  const rows = el.querySelector("table").rows;
+  const key = (e) => {
+    e.stopPropagation(); // the keys are the cell's while it is typed in
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.code === "KeyA") { // select all: this cell's text, not the note
+      e.preventDefault();
+      const all = document.createRange();
+      all.selectNodeContents(cell);
+      document.getSelection().removeAllRanges();
+      document.getSelection().addRange(all);
+    }
+    else if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.code === "KeyZ" || e.code === "KeyY") && cellSource(cell.textContent) === was) {
+      // nothing typed in this cell yet: undo / redo go to the note, so the last cell written comes back
+      e.preventDefault();
+      cell.cancelEdit();
+      view.focus();
+      (e.code === "KeyY" || e.shiftKey ? redo : undo)(view);
+    }
+    else if (e.key === "Escape") { e.preventDefault(); cell.cancelEdit(); view.focus(); }
+    else if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); finish(row + 1 < rows.length ? [row + 1, col] : null, true); }
+    else if (e.key === "Tab") {
+      e.preventDefault();
+      const n = rows[row].cells.length;
+      let r = row, c = col + (e.shiftKey ? -1 : 1);
+      if (c >= n) { r++; c = 0; } else if (c < 0) { r--; c = (rows[r] || rows[0]).cells.length - 1; }
+      finish(r >= 0 && r < rows.length ? [r, c] : null, true);
+    }
+  };
+  const blur = () => finish(null);
+  cell.addEventListener("keydown", key);
+  cell.addEventListener("blur", blur);
+}
+function openCell(view, el, src, [r, c]) {
+  const cell = el.querySelector("table").rows[r]?.cells[c];
+  if (cell) editCell(view, el, src, cell);
 }
 
 /** Where the text of cell `col` starts in line `line` of a table's source, counted from the table's start. */

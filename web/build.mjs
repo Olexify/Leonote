@@ -22,7 +22,6 @@ cpSync(path.join(root, "mini.html"), path.join(dist, "mini.html")); // the alway
 cpSync(path.join(root, "mini.js"), path.join(dist, "mini.js"));
 cpSync(path.join(root, "ytmini.html"), path.join(dist, "ytmini.html"));
 cpSync(path.join(root, "breakpop.html"), path.join(dist, "breakpop.html")); // a break on the desktop while Leonote is out of sight
-cpSync(path.join(root, "breakpop.js"), path.join(dist, "breakpop.js")); // an online video's own window while Leonote is out of sight
 cpSync(path.join(root, "viewer.html"), path.join(dist, "viewer.html")); // the picture and video viewer's own window
 cpSync(path.join(root, "viewer.js"), path.join(dist, "viewer.js"));
 cpSync(path.join(root, "script.html"), path.join(dist, "script.html")); // the script window: a note to read while recording
@@ -52,6 +51,7 @@ const options = {
     style: path.join(root, "styles", "app.css"),
     mock: path.join(root, "mock.js"),
     ytmini: path.join(root, "ytmini.js"), // the online video's own small window
+    breakpop: path.join(root, "breakpop.js"), // a break's card on the desktop while Leonote is out of sight
   },
   outdir: dist,
   bundle: true,

@@ -6235,6 +6235,83 @@ async function start() {
   };
   app.bus.on("view", paintCompactNav);
 
+  /* ── a phone: one panel at a time - the note tree slides in as a drawer, the views sit in a bar along the
+     bottom, everything is big enough for a thumb. Only on a phone (`?phone` tries it in a browser): a narrow desktop
+     window keeps the desktop layout. */
+  if (/Android|iPhone|iPad/i.test(navigator.userAgent) || new URLSearchParams(location.search).has("phone")) {
+    const root = $("#app");
+    root.classList.add("is-phone");
+    document.documentElement.classList.add("is-phone"); // toasts and dialogs sit outside #app
+    const drawer = (open) => app.setSetting("sidebar", open);
+    const nav = h("nav", { class: "phone-nav", "aria-label": "Views" });
+    const items = [
+      ["notes", "folder", "Notes", () => drawer(!app.settings.sidebar)],
+      ["home", "home", "Home", () => { drawer(false); app.openView("home"); }],
+      ["tasks", "checkSquare", "Tasks", () => { drawer(false); app.openView("tasks"); }],
+      ["today", "calendar", "Today", () => { drawer(false); app.run("daily"); }],
+      ["search", "search", "Search", () => { drawer(false); app.run("switcher"); }],
+    ];
+    for (const [key, ic, name, run] of items) nav.append(h("button", { class: "phone-btn", dataset: { key }, "aria-label": name, onclick: run }, icon(ic), h("span", { text: name })));
+    // a tap beside the open drawer closes it
+    const scrim = h("div", { class: "phone-scrim", onclick: () => drawer(false) });
+    root.append(scrim, nav);
+    const paint = () => {
+      const t = cur();
+      for (const b of nav.children) b.classList.toggle("is-on", b.dataset.key === "notes" ? !!app.settings.sidebar : !!t && t.kind === "view" && t.view === b.dataset.key);
+    };
+    // the drawer starts shut and shuts when something opens from it
+    if (app.settings.sidebar) drawer(false);
+    app.bus.on("view", () => { if (app.settings.sidebar) drawer(false); paint(); });
+    app.bus.on("settings", (k) => { if (k === "sidebar") paint(); });
+    paint();
+    // no slide at startup: the drawer is simply shut when the app appears
+    root.classList.add("phone-still");
+    setTimeout(() => root.classList.remove("phone-still"), 400);
+
+    // typing a note: the bottom bar gives way to formatting, as a phone has no shortcuts
+    const fmt = h("div", { class: "phone-fmt", role: "toolbar", "aria-label": "Formatting" });
+    const keep = (e) => e.preventDefault(); // a press keeps the keyboard and the selection where they are
+    for (const [cmd, ic, name] of [["undo", "undo", "Undo"], ["redo", "redo", "Redo"], ["bold", "bold", "Bold"], ["italic", "italic", "Italic"], ["task", "checkSquare", "Checkbox"], ["bullets", "list", "List"], ["h2", "heading", "Heading"], ["link", "link", "Link"], ["outdent", "back", "Less indent"], ["indent", "forward", "More indent"]]) {
+      fmt.append(h("button", { class: "phone-fmt-btn", "aria-label": name, onpointerdown: keep, onmousedown: keep, onclick: () => app.editor.run(cmd) }, icon(ic)));
+    }
+    fmt.append(h("button", { class: "phone-fmt-btn is-done", "aria-label": "Done typing", onpointerdown: keep, onmousedown: keep, onclick: () => document.activeElement && document.activeElement.blur() }, icon("keyboard")));
+    root.append(fmt);
+    const typing = () => root.classList.toggle("is-typing", !!(document.activeElement && document.activeElement.closest && document.activeElement.closest("#editor .cm-content")));
+    document.addEventListener("focusin", typing, true);
+    document.addEventListener("focusout", () => setTimeout(typing, 0), true);
+
+    // Android's back: closes what is on top (a dialog, the drawer), then goes back a step in Leonote; only
+    // at the start of the trail does it leave the app. A placeholder history entry catches each press.
+    const arm = () => { try { window.history.pushState({ leonote: 1 }, ""); } catch {} };
+    arm();
+    let leaving = 0;
+    window.addEventListener("popstate", () => {
+      const dlg = document.querySelector("#overlay-root > *");
+      if (dlg) document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      else if (app.settings.sidebar) drawer(false);
+      else if (document.activeElement && document.activeElement.closest && document.activeElement.closest(".cm-content")) document.activeElement.blur();
+      else if (trailStep(-1) >= 0) app.run("back");
+      else if (Date.now() - leaving > 2500) { leaving = Date.now(); toast("Press back again to leave Leonote", { ms: 2500 }); }
+      else { shutdown(); return; } // the second press in a row: everything saved, then Leonote closes
+      arm();
+    });
+
+    // a swipe in from the left edge opens the drawer; a swipe left on it closes it
+    let sx = 0, sy = 0, from = "";
+    document.addEventListener("touchstart", (e) => {
+      const t = e.touches[0];
+      sx = t.clientX; sy = t.clientY;
+      from = sx < 24 && !app.settings.sidebar ? "edge" : app.settings.sidebar && e.target.closest(".sidebar, .phone-scrim") ? "drawer" : "";
+    }, { passive: true });
+    document.addEventListener("touchend", (e) => {
+      if (!from) return;
+      const t = e.changedTouches[0], dx = t.clientX - sx, dy = Math.abs(t.clientY - sy);
+      if (dy < 60 && from === "edge" && dx > 60) drawer(true);
+      else if (dy < 60 && from === "drawer" && dx < -60) drawer(false);
+      from = "";
+    }, { passive: true });
+  }
+
   let fullWas = null; // the tab the full window was on when it went compact
   const onTopNow = () => (app.settings.compact ? app.settings.compactOnTop !== false : !!app.settings.onTop);
 

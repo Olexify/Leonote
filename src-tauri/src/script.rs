@@ -3,6 +3,8 @@
 //! "exclude from capture", through Tauri's content protection). What is on the monitor itself, a camera or a
 //! capture card still sees it.
 
+#[cfg(mobile)]
+use crate::mobile::*;
 use serde_json::{json, Value};
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};

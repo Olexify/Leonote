@@ -3,6 +3,8 @@
 //! Windows dialog the page cannot answer; that yes lives in allowed.json next to them, not in any settings a vault carries.
 //! What a plugin may do is judged in web/plugins.js, which holds its sandboxed frame; net is judged here as well.
 
+#[cfg(mobile)]
+use crate::mobile::*;
 use serde_json::{json, Map, Value};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};

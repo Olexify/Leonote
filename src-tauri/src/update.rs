@@ -7,23 +7,31 @@
 //! told, with the download page.
 
 use serde_json::{json, Value};
+#[cfg(desktop)]
 use std::sync::Mutex;
+#[cfg(desktop)]
 use tauri_plugin_updater::UpdaterExt;
 
 const VERSION_URL: &str = "https://leonote.app/version.json";
 
-/// This copy can replace itself: installed by the Windows installer, or an AppImage.
+/// This copy can replace itself: installed by the Windows installer, or an AppImage (a phone updates from its store).
 fn installable() -> bool {
-    use tauri::utils::config::BundleType;
-    matches!(tauri::utils::platform::bundle_type(), Some(BundleType::Nsis | BundleType::AppImage))
+    #[cfg(mobile)] { false }
+    #[cfg(desktop)] {
+        use tauri::utils::config::BundleType;
+        matches!(tauri::utils::platform::bundle_type(), Some(BundleType::Nsis | BundleType::AppImage))
+    }
 }
 
 /// The update downloaded and checked, waiting for the app to finish saving.
+#[cfg(desktop)]
 static READY: Mutex<Option<(tauri_plugin_updater::Update, Vec<u8>)>> = Mutex::new(None);
 
 /// Downloads the newest version (signature checked by the updater) and keeps it until `update_apply`. On a click only.
 #[tauri::command]
 pub async fn update_fetch(app: tauri::AppHandle) -> Result<String, String> {
+    #[cfg(mobile)] { let _ = app; Err("A phone updates from its app store.".into()) }
+    #[cfg(desktop)] {
     if !installable() { return Err("This copy is updated by downloading the new version.".into()); }
     let up = app.updater().map_err(|e| e.to_string())?.check().await.map_err(|e| format!("Could not ask GitHub for the update: {e}"))?
         .ok_or("You have the newest version.")?;
@@ -31,14 +39,18 @@ pub async fn update_fetch(app: tauri::AppHandle) -> Result<String, String> {
     let v = up.version.clone();
     *READY.lock().map_err(|e| e.to_string())? = Some((up, bytes));
     Ok(v)
+    }
 }
 
 /// Installs what `update_fetch` got and starts the new version (on Windows the installer closes this one).
 #[tauri::command]
 pub fn update_apply(app: tauri::AppHandle) -> Result<(), String> {
+    #[cfg(mobile)] { let _ = app; Err("A phone updates from its app store.".into()) }
+    #[cfg(desktop)] {
     let (up, bytes) = READY.lock().map_err(|e| e.to_string())?.take().ok_or("No update is downloaded.")?;
     up.install(bytes).map_err(|e| format!("The update could not be installed: {e}"))?;
     app.restart()
+    }
 }
 
 /// The page a newer version may send the user to: Leonote's own sites only (a changed file cannot point at

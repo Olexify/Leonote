@@ -365,6 +365,27 @@ test("a click on a drawn table's cell puts the caret at that cell's text in the 
   assert.ok(at(3, 1).startsWith("canvas"), "a row without the leading pipe");
 });
 
+test("a cell typed in place: its source span, and what is typed written back as one cell", async () => {
+  const { cellRange, cellSource } = await import("../livepreview.js");
+  const bs = String.fromCharCode(92);
+  const src = ["| a | b |", "|---|---|", `| x ${bs}| y | **z**  |`, "| 1 |  |"].join(String.fromCharCode(10));
+  const cell = (line, col) => src.slice(...cellRange(src, line, col));
+  assert.equal(cell(2, 0), `x ${bs}| y`, "an escaped pipe stays in the cell");
+  assert.equal(cell(2, 1), "**z**", "trailing spaces are not the cell's");
+  assert.equal(cell(3, 1), "", "an empty cell");
+  assert.equal(cellSource(`a | b${String.fromCharCode(10)}c`), `a ${bs}| b c`, "a pipe is escaped, a line break becomes a space");
+  assert.equal(cellSource(`a ${bs}| b`), `a ${bs}| b`, "an escaped pipe is not escaped twice");
+});
+
+test("a click in a drawn cell puts the caret at the same letter in its source", async () => {
+  const { sourceOffset } = await import("../livepreview.js");
+  assert.equal(sourceOffset("plain words", 6), 6, "no marks: the same place");
+  const src = "the **bold** end";
+  assert.equal(src.slice(sourceOffset(src, "the bo".length)), "ld** end", "the hidden ** are stepped over");
+  assert.equal(src.slice(sourceOffset(src, "the bold e".length)), "nd");
+  assert.equal(sourceOffset("abc", 99), 3, "past the end: the end");
+});
+
 test("an error from Windows is said in plain words, anything else is left as it was", () => {
   assert.equal(plainError("Rename failed: rename A -> B: Access is denied. (os error 5)"), "Rename failed: rename A -> B: Windows refused access - it may be open in another program, read-only or protected");
   assert.equal(plainError(new Error("write Notes/x.md: There is not enough space on the disk. (os error 112)")), "write Notes/x.md: the disk is full");

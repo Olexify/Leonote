@@ -5,6 +5,8 @@
 //! The viewer may show, list and recycle only what it was handed and what lies beside it in the same folder:
 //! those paths are remembered here, so a script in a page cannot have it recycle any other file.
 
+#[cfg(mobile)]
+use crate::mobile::*;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};

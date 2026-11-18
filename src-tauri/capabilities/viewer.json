@@ -2,7 +2,15 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "viewer",
   "description": "The picture and video viewer: a borderless window that moves, resizes, goes full screen and closes itself",
-  "windows": ["viewer", "viewer-*"],
+  "platforms": [
+    "windows",
+    "linux",
+    "macOS"
+  ],
+  "windows": [
+    "viewer",
+    "viewer-*"
+  ],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",

@@ -11,7 +11,13 @@
 //  2. WRITES ARE ATOMIC. Tasks are only ever appended as sparse ops; notes,
 //     habits and settings go through temp+fsync+rename.
 
+#[cfg(mobile)]
+use crate::mobile::*;
+#[cfg(mobile)]
+mod mobile;
 mod ai;
+mod drive;
+mod drivesync;
 mod jev;
 mod proposals;
 mod officeconv;
@@ -1758,21 +1764,27 @@ fn app_request_quit(app: AppHandle) {
 /// Enable or disable launch-at-login (hidden). Returns the resulting state.
 #[tauri::command]
 fn autostart_set(app: AppHandle, enabled: bool) -> Result<bool, String> {
-    use tauri_plugin_autostart::ManagerExt;
-    let m = app.autolaunch();
-    if enabled { m.enable() } else { m.disable() }.map_err(|e| e.to_string())?;
-    m.is_enabled().map_err(|e| e.to_string())
+    #[cfg(mobile)] { let _ = (app, enabled); Ok(false) } // a phone starts nothing at login
+    #[cfg(desktop)] {
+        use tauri_plugin_autostart::ManagerExt;
+        let m = app.autolaunch();
+        if enabled { m.enable() } else { m.disable() }.map_err(|e| e.to_string())?;
+        m.is_enabled().map_err(|e| e.to_string())
+    }
 }
 
 /// At start, launch at login on: still on in Windows (Task Manager or Startup apps may have switched it off), it names
 /// the exe that is running now - a portable copy run from a new folder is the one Windows starts. Off there stays off.
 #[tauri::command]
 fn autostart_repoint(app: AppHandle) -> Result<bool, String> {
-    use tauri_plugin_autostart::ManagerExt;
-    let m = app.autolaunch();
-    let on = m.is_enabled().map_err(|e| e.to_string())?;
-    if on { m.enable().map_err(|e| e.to_string())?; }
-    Ok(on)
+    #[cfg(mobile)] { let _ = app; Ok(false) }
+    #[cfg(desktop)] {
+        use tauri_plugin_autostart::ManagerExt;
+        let m = app.autolaunch();
+        let on = m.is_enabled().map_err(|e| e.to_string())?;
+        if on { m.enable().map_err(|e| e.to_string())?; }
+        Ok(on)
+    }
 }
 
 #[cfg(desktop)]
@@ -1912,6 +1924,20 @@ fn on_exit(app: &AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // a phone has no home folder: the app's own private storage is it (the vault, ~/.leonote, the tasks), named by the
+    // package the process runs as. ponytail: private to the app; a vault the user picks (or Drive) comes next.
+    #[cfg(target_os = "android")]
+    if std::env::var_os("HOME").map_or(true, |h| h.is_empty() || h == "/") {
+        if let Ok(cmd) = std::fs::read("/proc/self/cmdline") {
+            let first = cmd.split(|b| *b == 0).next().unwrap_or(&[]);
+            let pkg = String::from_utf8_lossy(first).split(':').next().unwrap_or("").to_string();
+            if !pkg.is_empty() && !pkg.contains('/') {
+                let d = format!("/data/data/{pkg}/files");
+                let _ = std::fs::create_dir_all(&d);
+                std::env::set_var("HOME", d);
+            }
+        }
+    }
     // an agent asked for the vault over MCP: no window, no plugins, no
     // single-instance handshake - just stdin and stdout until they close
     if std::env::args().any(|a| a == "--mcp") {
@@ -1992,7 +2018,9 @@ pub fn run() {
             .plugin(tauri_plugin_autostart::init(
                 tauri_plugin_autostart::MacosLauncher::LaunchAgent,
                 Some(vec!["--hidden"]),
-            ));
+            ))
+            // installs a new version on a click (update.rs); nothing is fetched by itself
+            .plugin(tauri_plugin_updater::Builder::new().build());
     }
     trace("building app");
     let app = builder
@@ -2007,8 +2035,6 @@ pub fn run() {
         })
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        // installs a new version on a click (update.rs); nothing is fetched by itself
-        .plugin(tauri_plugin_updater::Builder::new().build())
         // pictures the webview cannot load itself: HEIC from the disk, and what is on a phone
         // - answered only to Leonote's own windows: a website open in a tab gets nothing from them
         .register_asynchronous_uri_scheme_protocol("heic", |ctx, req, responder| {
@@ -2242,6 +2268,7 @@ pub fn run() {
             grant::pick_open, grant::pick_save,
             script::script_open, script::script_start, script::script_path,
             claude_import::claude_import, update::update_check, update::update_fetch, update::update_apply,
+            drive::drive_status, drive::drive_connect, drive::drive_disconnect, drive::drive_sync,
             viewer::viewer_open, viewer::viewer_start, viewer::viewer_siblings, viewer::viewer_trash,
             oauth::oauth_listen,
             oauth::oauth_wait,

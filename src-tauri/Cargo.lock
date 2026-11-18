@@ -2714,18 +2714,21 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "leonote-rs"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "age",
  "base64 0.23.1",
  "chrono",
  "filetime",
+ "getrandom 0.2.17",
  "indexmap 2.14.2",
  "lofty",
+ "md-5",
  "notify",
  "serde",
  "serde_json",
  "sevenz-rust",
+ "sha2 0.10.9",
  "tauri",
  "tauri-build",
  "tauri-plugin-autostart",
@@ -2881,6 +2884,16 @@ dependencies = [
  "log",
  "tendril",
  "web_atoms",
+]
+
+[[package]]
+name = "md-5"
+version = "0.10.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d89e7ee0cfbedfc4da3340218492196241d89eefb6dab27de5df917a6d2e78cf"
+dependencies = [
+ "cfg-if",
+ "digest 0.10.7",
 ]
 
 [[package]]

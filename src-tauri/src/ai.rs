@@ -65,11 +65,11 @@ pub(crate) fn unseal(sealed: &[u8]) -> Result<Vec<u8>, String> {
 }
 
 #[cfg(not(windows))]
-fn seal(_: &[u8]) -> Result<Vec<u8>, String> {
+pub(crate) fn seal(_: &[u8]) -> Result<Vec<u8>, String> {
     Err("keys can only be kept on Windows for now".into())
 }
 #[cfg(not(windows))]
-fn unseal(_: &[u8]) -> Result<Vec<u8>, String> {
+pub(crate) fn unseal(_: &[u8]) -> Result<Vec<u8>, String> {
     Err("keys can only be kept on Windows for now".into())
 }
 

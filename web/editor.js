@@ -5,7 +5,7 @@
 import { emojiPicker } from "./emoji.js";
 import { EditorState, StateEffect, StateField, Compartment, Annotation, Prec } from "@codemirror/state";
 import { EditorView, keymap, drawSelection, dropCursor, rectangularSelection, crosshairCursor, placeholder, Decoration, showTooltip } from "@codemirror/view";
-import { defaultKeymap, history, historyKeymap, indentWithTab, redo, undo, undoDepth, redoDepth, selectAll } from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap, indentWithTab, indentMore, indentLess, redo, undo, undoDepth, redoDepth, selectAll } from "@codemirror/commands";
 // CodeMirror's own keys, less two: Ctrl+/ comments a line out - and on a German keyboard Ctrl+Shift+7 IS Ctrl+/, so the
 // numbered list became an HTML comment; Ctrl+M switched Tab to leaving the editor, with no sign of it
 const EDIT_KEYS = defaultKeymap.filter((b) => b.key !== "Mod-/" && b.key !== "Mod-m" && b.key !== "Ctrl-m");
@@ -941,7 +941,7 @@ export function createEditor(parent, o) {
     },
 
     run(cmd) {
-      const map = { ...commandMap(), find: openSearchPanel };
+      const map = { ...commandMap(), find: openSearchPanel, undo, redo, indent: indentMore, outdent: indentLess };
       if (map[cmd]) { map[cmd](view); view.focus(); }
     },
 

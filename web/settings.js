@@ -1368,6 +1368,7 @@ export function mountSettings(app, el) {
       } }, icon("download"), "Choose the Takeout folder…")),
       row("Task history copies", "A copy of your task list is kept at each start and exit. The oldest go past this number.", slider("historyCopies", 5, 200, "")),
       row("Data recovery", "Bring back an earlier copy of your task list in a click. Deleted notes are in the trash; earlier versions are in a note's menu.", h("button", { class: "btn", onclick: () => recoveryDialog(app) }, icon("undo"), "Open recovery…")),
+      driveRow(app, row),
       row("Leonote Cloud", "Coming later: keep your encrypted backup on our servers. Your password still never leaves your computer.", h("span", { class: "set-soon", text: "Soon" }))),
 
     group("Claude Code", "Your Claude Code sessions as notes: the conversation only (your messages and Claude's replies - not the tools' output or its thinking), keys and passwords blanked, private to AI. Claude Code's own files are only read. New and grown sessions come in on a click; a note you edit here is not overwritten.",
@@ -1574,4 +1575,43 @@ export function mountSettings(app, el) {
   for (const i of el.querySelectorAll("input:not([autocomplete])")) i.setAttribute("autocomplete", "off");
   animateRows(el.firstElementChild); // one-off: the page is built once
   return { show(o) { const g = o && o.group && groups.find((x) => x.title === o.group); if (g) { if (g.sec.card) g.sec.card.open(); g.sec.unfold(); g.sec.scrollIntoView({ block: "start" }); arrived(g.sec); } } };
+}
+
+/** Google Drive: the vault kept in a "Leonote" folder on the user's own Drive (only files Leonote made are seen).
+ *  Hidden while this build cannot sign in to Google. A sync the brake stopped asks before it trashes many notes. */
+function driveRow(app, row) {
+  const btns = h("div", { class: "set-btns" });
+  const el = row("Google Drive", "Your notes in a “Leonote” folder on your own Google Drive, on every device you sign in on. Leonote sees only the files it made there. A note changed in two places is kept twice, never overwritten; deleted notes go to a trash you can restore from.", btns);
+  el.hidden = true;
+  const say = (r) => {
+    const parts = [r.up && `${r.up} up`, r.down && `${r.down} down`, r.both && `${r.both} kept twice (changed in both places)`, r.binned && `${r.binned} to a trash`].filter(Boolean);
+    app.toast(parts.length ? `Drive: ${parts.join(", ")}${r.failed.length ? ` · ${r.failed.length} could not be synced` : ""}` : (r.failed.length ? `Drive: ${r.failed.length} could not be synced` : "Drive: everything is in sync"), { ms: 6000, kind: r.failed.length ? "error" : undefined });
+    if (r.failed.length) console.warn("Drive sync:", r.failed);
+  };
+  const sync = async (sure) => {
+    try {
+      if (app.flushAll) await app.flushAll(); // what is being typed is on disk before Drive's copy can come down over it
+      say(await app.host.driveSync(sure));
+    }
+    catch (e) {
+      const m = String(e);
+      if (!sure && /would move \d+ notes/.test(m) && (await confirmDialog("Move these notes to the trash?", m, { ok: "Yes, sync" }))) return sync(true);
+      app.toast(m, { kind: "error", ms: 8000 });
+    }
+  };
+  const paint = async () => {
+    let s = { ready: false };
+    try { s = await app.host.driveStatus(); } catch {}
+    el.hidden = !s.ready;
+    btns.replaceChildren(...(s.connected
+      ? [h("button", { class: "btn btn-primary", onclick: () => sync(false) }, icon("rotateRight"), "Sync now"),
+         h("button", { class: "btn", onclick: async () => { await app.host.driveDisconnect().catch(() => {}); paint(); } }, "Disconnect")]
+      : [h("button", { class: "btn btn-primary", onclick: async () => {
+          app.toast("Sign in to Google in your browser…", { ms: 8000 });
+          try { await app.host.driveConnect(); app.toast("Google Drive connected", { ms: 3000 }); paint(); sync(false); }
+          catch (e) { app.toast(String(e), { kind: "error", ms: 8000 }); }
+        } }, icon("link"), "Connect Google Drive")]));
+  };
+  if (app.host.driveStatus) paint();
+  return el;
 }

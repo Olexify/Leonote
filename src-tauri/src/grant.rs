@@ -6,6 +6,8 @@
 //!
 //! The list lives in ~/.leonote/granted.json, written only from here; the page has no command that writes there.
 
+#[cfg(mobile)]
+use crate::mobile::*;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;

@@ -14,6 +14,8 @@
 //! itself - `web:closed` carries the last size and position out as the window
 //! goes.
 
+#[cfg(mobile)]
+use crate::mobile::*;
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 

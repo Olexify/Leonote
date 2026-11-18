@@ -158,11 +158,11 @@ export function mountDeskBreaks(app) {
   /* Leonote out of sight (minimized, in the tray): the break shows on the desktop too, in a small window at the top
      right (breakpop.html) - Settings: "On the desktop when Leonote is hidden". A tick there is a tick here. */
   let pop = null; // { ids, title, timer }
-  const popItems = () => (pop && data ? data.breaks.filter((b) => pop.ids.includes(b.id)).map((b) => ({ id: b.id, name: b.name, done: !!b.done, sub: b.reps ? `× ${b.reps}${b.w ? " · " + b.w + " " + (b.unit || "kg") : ""}` : b.dur ? `${b.dur} s` : "" })) : []);
+  const popItems = () => (pop && data ? data.breaks.filter((b) => pop.ids.includes(b.id)).map((b) => ({ id: b.id, kind: b.kind, name: b.name, done: !!b.done, sub: b.reps ? `× ${b.reps}${b.w ? " · " + b.w + " " + (b.unit || "kg") : ""}` : b.dur ? `${b.dur} s` : "" })) : []);
   function popSend() {
     if (!pop || !app.host.emitTo) return;
     const items = popItems();
-    app.host.emitTo("breakpop", "breakpop:show", { title: pop.title, items, endAt: S.deskPopStay === true ? 0 : pop.endAt }).catch(() => {});
+    app.host.emitTo("breakpop", "breakpop:show", { title: pop.title, items, endAt: S.deskPopStay === true ? 0 : pop.endAt, look: { theme: document.documentElement.dataset.theme, style: document.documentElement.getAttribute("style") || "" } }).catch(() => {});
     // all of it ticked: it goes by itself, a moment later
     if (pop.ticked && items.length && items.every((x) => x.done)) { clearTimeout(pop.timer); pop.timer = setTimeout(popClose, 1500); }
   }
@@ -183,7 +183,8 @@ export function mountDeskBreaks(app) {
     const c = p && p.cmd;
     if (c === "hello") popSend();
     else if (c === "tick" && pop && pop.ids.includes(p.id)) { pop.ticked = true; if (p.done) app.sound("done"); change((d) => { setDone(d, p.id, !!p.done); reward(d, [p.id]); }); }
-    else if (c === "closed") { if (pop) clearTimeout(pop.timer); pop = null; }
+    // closed by hand: its voice stops at once, and its timer with it (as the in-app card does)
+    else if (c === "closed") { if (pop) { clearTimeout(pop.timer); if (timer && pop.ids.includes(timer.id)) stopTimer(); } pop = null; hush(); }
     else if (c === "settings") { popClose(); app.host.win.show().catch(() => {}); if (app.host.win.unminimize) app.host.win.unminimize().catch(() => {}); app.openView("timer"); setTimeout(() => { const el = document.querySelector(".db-panel"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }, 300); }
     else if (c === "open") { popClose(); app.host.win.show().catch(() => {}); if (app.host.win.unminimize) app.host.win.unminimize().catch(() => {}); app.openView("timer"); }
   });
@@ -228,13 +229,15 @@ export function mountDeskBreaks(app) {
     }
     stopTimer();
     timer = { id: b.id, left: b.dur || 0, up: !b.dur, iv: 0 };
+    const gen0 = sayGen; // hushed (the card closed, the voice off): the count is quiet too
     timer.iv = setInterval(() => {
       if (!timer) return;
       // only the seconds change each second: the lists are not redrawn (focus, tooltips and screen readers stay)
       const show = () => { for (const el of document.querySelectorAll(".db-left")) el.textContent = `${timer.left} s`; };
       if (timer.up) { timer.left++; tickSound(); show(); return; }
       timer.left--;
-      if (timer.left === 3) say("Three, two, one.");
+      // the last three seconds, one word each, on the second itself (not queued: a queued line waits its breath)
+      if (timer.left >= 1 && timer.left <= 3 && voiceOn() && gen0 === sayGen) { try { const a = new Audio(`voice/${["", "one", "two", "three"][timer.left]}.ogg`); a.volume = 0.9; a.play().catch(() => {}); } catch {} }
       if (timer.left > 0) { if (timer.left > 3 || !voiceOn()) tickSound(); show(); return; }
       const id = timer.id;
       clearInterval(timer.iv); timer = null;
