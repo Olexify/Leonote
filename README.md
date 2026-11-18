@@ -1,4 +1,4 @@
-# Leonote <a href="https://leonote.app"><img align="right" width="140" src="https://leogifcounter.vercel.app/api/counter" alt="visitor counter" /></a>
+# Leonote <a href="https://leonote.app"><img align="right" width="280" src="https://leogifcounter.vercel.app/api/counter" alt="visitor counter" /></a>
 
 **Instant, local-first notes and tasks.** Your notes are plain Markdown files on your own computer; tasks, habits,
 a focus timer and an AI assistant of your choosing sit right next to them. Rust + Tauri, a CodeMirror 6 live
@@ -8,6 +8,8 @@ preview editor, no framework, no loading screens.
 [![Download](https://img.shields.io/badge/Download-0F172A?style=flat-square&logo=github&logoColor=white)](https://github.com/Olexify/Leonote/releases/latest)
 [![Discord](https://img.shields.io/badge/Discord-0F172A?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/UpmNHxT7PF)
 [![Patreon](https://img.shields.io/badge/Patreon-0F172A?style=flat-square&logo=patreon&logoColor=white)](https://www.patreon.com/c/Olexifyyy)
+
+<p align="center"><img src="docs/screenshots/editor.png" alt="Leonote: a Markdown note in the live preview editor, the folder tree on the left and the note's outline, tags and backlinks on the right" width="100%" /></p>
 
 ## Download
 
@@ -30,6 +32,68 @@ Windows (the phone link, Windows speech, some file previews) are missing or limi
 > **Source-available, all rights reserved.** Leonote is free to use, but it is not open source: the code is here to
 > read, not to reuse, build for others or redistribute - see [LICENSE](LICENSE) (section 2A) and
 > [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Issues are welcome; pull requests are not accepted.
+
+## A quick look
+
+| | |
+| :---: | :---: |
+| <img src="docs/screenshots/home.png" alt="Home: today's tasks, habits, life focus and recent notes" /> **Home** - today at a glance | <img src="docs/screenshots/tasks.png" alt="Tasks: inbox with due dates, repeats and priorities" /> **Tasks** - due dates, repeats, steps |
+| <img src="docs/screenshots/habits.png" alt="Habits: daily ticks, streaks and a 20-week heatmap" /> **Habits** - streaks and a 20-week heatmap | <img src="docs/screenshots/timer.png" alt="Timer: focus clock, XP level and breaks that move you" /> **Timer** - focus blocks, breaks, XP |
+| <img src="docs/screenshots/calendar.png" alt="Calendar: a month of tasks and recurring items" /> **Calendar** - tasks on the month | <img src="docs/screenshots/focus.png" alt="Focus: life areas in order, with their tasks and steps" /> **Focus** - what matters most, in order |
+| <img src="docs/screenshots/editor-light.png" alt="The editor in the light theme" /> **Light or dark**, with your accent colour | |
+
+## Your first five minutes
+
+1. **Install and open it.** Leonote makes a `LeoNote` folder in your home folder: that is your vault, plain files.
+2. **Write.** `Ctrl N` makes a note. Type Markdown; it renders as you go. `/` opens a menu of blocks (tables, callouts, checkboxes).
+3. **Link.** Type `[[` and pick a note. Its backlinks show on the right. `#tags` work anywhere.
+4. **Add a task.** `Alt 2` opens Tasks. Type `call bank !h @tomorrow` and press Enter: high priority, due tomorrow.
+5. **Find anything.** `Ctrl O` jumps to a note, `Ctrl P` lists every command, `Ctrl Shift F` searches all notes.
+6. **Start a focus block.** Open the Timer (clock icon on the left) and press Start. Ticked tasks and focus time earn XP.
+
+## How do I...
+
+<details><summary><b>...bring my notes from Obsidian or another app?</b></summary>
+
+Open that folder with **Switch vault…** (Settings › Files) or copy the `.md` files into `~/LeoNote`. Links, tags, checkboxes and
+front matter are read as they are; nothing is converted or locked in.
+</details>
+
+<details><summary><b>...type tasks quickly?</b></summary>
+
+In any "Add a task" box: `!h` / `!m` / `!l` sets the priority, `@tomorrow` or `@fri` the due date, `^fri` the start
+date, `@+3` three days from now. `Ctrl Alt N` adds one from anywhere in Windows, even with Leonote hidden. Repeating
+ones ("water the plants every Tuesday") come from **+ Recurring** on the Habits page.
+</details>
+
+<details><summary><b>...keep my notes on two computers?</b></summary>
+
+Put the vault in any folder sync (OneDrive, Dropbox, Syncthing, a git remote). See [More than one computer](#more-than-one-computer).
+</details>
+
+<details><summary><b>...use an AI assistant with my notes?</b></summary>
+
+Open the Assistant (sparkle icon), choose a provider and paste your own key, or pick Ollama / LM Studio to stay on
+your computer. Nothing is sent until you press Send, and you see what goes along. Each note or folder can be set to
+private, review or open for AI in the tree.
+</details>
+
+<details><summary><b>...connect Claude Desktop, Claude Code or Cursor?</b></summary>
+
+Run `leonote-rs.exe --mcp` as an MCP server; the Assistant view shows the exact command to copy. The tools and rules
+are in [AGENTS.md](AGENTS.md).
+</details>
+
+<details><summary><b>...get the newest version?</b></summary>
+
+Settings › About › Check for updates. The installer and AppImage copies update with one click; the portable `.exe`
+is replaced by downloading it again.
+</details>
+
+<details><summary><b>...get a deleted note back?</b></summary>
+
+Deleted notes go to `.trash` in the vault and stay there for 30 days by default (Settings › Trash).
+</details>
 
 ## What it does
 
