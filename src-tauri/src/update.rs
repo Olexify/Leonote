@@ -1,11 +1,45 @@
-//! "Is there a newer Leonote?" - for the copies that do not update themselves (the portable one; the Store's
-//! does). One small file on leonote.app says the latest version: { "version": "1.2.0", "url": "https://leonote.app/download",
+//! "Is there a newer Leonote?" - for the copies that do not update themselves (the Store's does). One small file on
+//! leonote.app says the latest version: { "version": "1.2.0", "url": "https://leonote.app/download",
 //! "notes": "...", "security": true }. Asked on a click, or weekly when the user turns that on - never otherwise.
-//! Nothing is downloaded or run: a newer version is only told, with its page to open in the browser.
+//! The installed copies (Windows installer, AppImage) can then install it on a click: `update_fetch` downloads it
+//! from the GitHub release and checks its signature against the key in tauri.conf.json, the app saves everything
+//! as on a quit, and `update_apply` installs it and starts the new version. The portable exe and the .deb are only
+//! told, with the download page.
 
 use serde_json::{json, Value};
+use std::sync::Mutex;
+use tauri_plugin_updater::UpdaterExt;
 
 const VERSION_URL: &str = "https://leonote.app/version.json";
+
+/// This copy can replace itself: installed by the Windows installer, or an AppImage.
+fn installable() -> bool {
+    use tauri::utils::config::BundleType;
+    matches!(tauri::utils::platform::bundle_type(), Some(BundleType::Nsis | BundleType::AppImage))
+}
+
+/// The update downloaded and checked, waiting for the app to finish saving.
+static READY: Mutex<Option<(tauri_plugin_updater::Update, Vec<u8>)>> = Mutex::new(None);
+
+/// Downloads the newest version (signature checked by the updater) and keeps it until `update_apply`. On a click only.
+#[tauri::command]
+pub async fn update_fetch(app: tauri::AppHandle) -> Result<String, String> {
+    if !installable() { return Err("This copy is updated by downloading the new version.".into()); }
+    let up = app.updater().map_err(|e| e.to_string())?.check().await.map_err(|e| format!("Could not ask GitHub for the update: {e}"))?
+        .ok_or("You have the newest version.")?;
+    let bytes = up.download(|_, _| {}, || {}).await.map_err(|e| format!("The update could not be downloaded or failed its signature check: {e}"))?;
+    let v = up.version.clone();
+    *READY.lock().map_err(|e| e.to_string())? = Some((up, bytes));
+    Ok(v)
+}
+
+/// Installs what `update_fetch` got and starts the new version (on Windows the installer closes this one).
+#[tauri::command]
+pub fn update_apply(app: tauri::AppHandle) -> Result<(), String> {
+    let (up, bytes) = READY.lock().map_err(|e| e.to_string())?.take().ok_or("No update is downloaded.")?;
+    up.install(bytes).map_err(|e| format!("The update could not be installed: {e}"))?;
+    app.restart()
+}
 
 /// The page a newer version may send the user to: Leonote's own sites only (a changed file cannot point at
 /// a download somewhere else).
@@ -32,7 +66,7 @@ pub async fn update_check(app: tauri::AppHandle) -> Result<Value, String> {
         let latest = v["version"].as_str().and_then(clean_version).ok_or("leonote.app gave no version")?;
         let url = v["url"].as_str().filter(|u| trusted_page(u)).unwrap_or("https://leonote.app").to_string();
         let notes: String = v["notes"].as_str().unwrap_or("").chars().take(300).collect();
-        Ok(json!({ "current": current, "latest": latest, "newer": crate::webext::newer(&latest, &current), "url": url, "notes": notes, "security": v["security"] == true }))
+        Ok(json!({ "current": current, "latest": latest, "newer": crate::webext::newer(&latest, &current), "url": url, "notes": notes, "security": v["security"] == true, "installable": installable() }))
     }).await.map_err(|e| e.to_string())?
 }
 

@@ -1,8 +1,15 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Leonote",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "identifier": "com.oleks.leonote-rs",
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE2NzUxN0I5MERCQzk5RDAKUldUUW1id051UmQxcGsyVHVtRno0OXJsSlhmcFM0aENLNHN1WkYwTFBFMi82eFZ5R0J0VEdyY0IK",
+      "endpoints": ["https://github.com/Olexify/Leonote/releases/latest/download/latest.json"],
+      "windows": { "installMode": "passive" }
+    }
+  },
   "build": {
     "frontendDist": "../dist",
     "beforeDevCommand": "npm run build",

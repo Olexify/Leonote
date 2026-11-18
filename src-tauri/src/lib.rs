@@ -2007,6 +2007,8 @@ pub fn run() {
         })
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        // installs a new version on a click (update.rs); nothing is fetched by itself
+        .plugin(tauri_plugin_updater::Builder::new().build())
         // pictures the webview cannot load itself: HEIC from the disk, and what is on a phone
         // - answered only to Leonote's own windows: a website open in a tab gets nothing from them
         .register_asynchronous_uri_scheme_protocol("heic", |ctx, req, responder| {
@@ -2239,7 +2241,7 @@ pub fn run() {
             external::unindexed_find, external::unindexed_names, external::no_index_set,
             grant::pick_open, grant::pick_save,
             script::script_open, script::script_start, script::script_path,
-            claude_import::claude_import, update::update_check,
+            claude_import::claude_import, update::update_check, update::update_fetch, update::update_apply,
             viewer::viewer_open, viewer::viewer_start, viewer::viewer_siblings, viewer::viewer_trash,
             oauth::oauth_listen,
             oauth::oauth_wait,

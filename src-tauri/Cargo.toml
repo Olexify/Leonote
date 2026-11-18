@@ -1,6 +1,6 @@
 [package]
 name = "leonote-rs"
-version = "1.0.0"
+version = "1.0.1"
 description = "Leonote - instant local-first notes and tasks"
 authors = ["Olexify.dev"]
 license-file = "../LICENSE"
@@ -51,6 +51,7 @@ base64 = "0.23.1"
 # songs' own details (title, artist, cover, the user's tags) read and written
 # in the file itself, every common audio format; pure Rust, no codecs
 lofty = "0.25"
+tauri-plugin-updater = "2"
 
 [target.'cfg(windows)'.dependencies]
 # the same versions Tauri's own WebView2 layer uses, for one settings call

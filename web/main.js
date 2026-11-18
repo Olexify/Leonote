@@ -3918,14 +3918,26 @@ async function start() {
     } catch (e) { toast("Could not import Claude Code's sessions: " + e, { kind: "error" }); }
     importing = false;
   };
-  /** Is there a newer Leonote? (Rust update_check: one small file on leonote.app.) Told, with its page to open in
-   *  the browser - nothing is downloaded or run. `quiet`: the weekly ask, which says something only when there is news. */
+  /** Is there a newer Leonote? (Rust update_check: one small file on leonote.app.) Told; an installed copy can then
+   *  install it on a click (update.rs), the others get its page in the browser - nothing is downloaded by itself.
+   *  `quiet`: the weekly ask, which says something only when there is news. */
+  let updating = false;
+  const installUpdate = async () => {
+    if (updating) return;
+    updating = true;
+    toast("Downloading the update…", { ms: 60000 });
+    try {
+      const v = await host.updateFetch();
+      toast(`Installing Leonote ${v} - it starts again in a moment`, { ms: 20000 });
+      await shutdown(() => host.updateApply()); // everything saved as on a quit, then the new version takes over
+    } catch (e) { updating = false; closing = false; toast(String(e), { kind: "error", ms: 8000 }); }
+  };
   app.checkUpdate = async ({ quiet = false } = {}) => {
     if (app.packaged) { if (!quiet) toast("This copy comes from the Microsoft Store, which keeps it up to date", { ms: 3500 }); return; }
     try {
       const r = await host.updateCheck();
       app.setSetting("updateCheckedAt", Date.now());
-      if (r && r.newer) toast(`Leonote ${r.latest} is out${r.security ? " - with security fixes" : ""} (you have ${r.current})`, { ms: 20000, action: { label: "Download page", run: () => app.openUrl(r.url) } });
+      if (r && r.newer) toast(`Leonote ${r.latest} is out${r.security ? " - with security fixes" : ""} (you have ${r.current})`, { ms: 20000, action: r.installable ? { label: "Install", run: installUpdate } : { label: "Download page", run: () => app.openUrl(r.url) } });
       else if (!quiet) toast(`Leonote ${(r && r.current) || ""} is the latest`, { ms: 3000 });
     } catch (e) { if (!quiet) toast(String(e), { kind: "error" }); }
   };
@@ -6489,7 +6501,8 @@ async function start() {
   // Rust holds the close and asks us to flush; it exits by itself after 2.5 s
   // if we never answer, so this can only ever make closing safer.
   let closing = false;
-  async function shutdown() {
+  // `then`: what runs once everything is written, instead of quitting (installing an update)
+  async function shutdown(then) {
     if (closing) return;
     closing = true;
     saveSession.cancel();
@@ -6549,6 +6562,7 @@ async function start() {
     }
     await Promise.race([work, wait(1000)]);
     try { localStorage.removeItem(PLUGINS_STARTING); } catch {} // a quit soon after start is no stuck plugin
+    if (typeof then === "function") return then();
     host.quit();
   }
   host.on("app:close-requested", shutdown);

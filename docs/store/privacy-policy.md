@@ -1,6 +1,6 @@
 # Leonote privacy policy
 
-Last updated: 14 November 2026
+Last updated: 18 November 2026
 
 This is the whole policy for the Leonote desktop app and the leonote.app website. It replaces the version of
 10 October 2026.
@@ -57,7 +57,8 @@ as any internet request does.
 | **Sending playlist changes** | YouTube, through your own Google Cloud app | The changes you make to that playlist | Only for playlists you set to send; off by default |
 | **Songs from a web address** | The site of that address | A request for the file | When you add or play it |
 | **Links in notes** | The site of the link; with link cards, also the site holding the picture that page names for its card, which may be another site | A request for the page, naming itself as Leonote (a YouTube link is asked of YouTube's public oEmbed address instead) | When you paste a bare address (to get its title; can be switched off), when link cards are on (off by default) and the note is shown - with the site's small icon and the card's picture, with no click - or when you add a page as a source |
-| **Checking for a newer version** (portable copy only; Settings › About) | leonote.app | A request for one small file that names the latest version - nothing about you or your notes | Only when you click "Check for updates", or once a week if you turn "Check weekly" on (off by default). A newer version is only shown, with its page to open in your browser; nothing is downloaded |
+| **Checking for a newer version** (copies not from the Microsoft Store; Settings › About) | leonote.app | A request for one small file that names the latest version - nothing about you or your notes | Only when you click "Check for updates", or once a week if you turn "Check weekly" on (off by default). A newer version is only shown, with its page to open in your browser; nothing is downloaded |
+| **Installing a newer version** (the Windows installer copy and the Linux AppImage) | GitHub (github.com and its download servers) | A download request for the list of the newest files and then the new version | Only when you click Install on a newer version. The download is checked against Leonote's signature before it is installed; nothing is installed by itself |
 | **Pictures from the web in a note** (`![](https://...)`) | The site the picture is on | A request for the picture, as a browser makes | When you click "Load picture" on it (the default), or when the note is shown with Settings › "Pictures from the web" set to Always |
 | **The built-in browser** | The sites you open, and the search engine you pick (Google until you choose another) | What any browser sends to them | When you browse. Leonote adds no advertising and no trackers to the pages; it adds two small scripts of its own - one for Ctrl+wheel zoom, which also tells the Player when a page starts a video and lets the Player pause it or set its volume, and, while "Offer to save sign-ins" is on, one that notices a sign-in so Leonote can offer to keep it in your password vault (nothing is sent anywhere). |
 | **Microsoft Defender SmartScreen**, in the built-in browser | Microsoft | The addresses of pages and downloads, checked against known dangerous sites, as in Microsoft Edge | When you browse |
