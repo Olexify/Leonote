@@ -33,6 +33,21 @@ Windows (the phone link, Windows speech, some file previews) are missing or limi
 > read, not to reuse, build for others or redistribute - see [LICENSE](LICENSE) (section 2A) and
 > [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Issues are welcome; pull requests are not accepted.
 
+## Check it yourself
+
+You do not have to take our word for a download:
+
+- **Checksums.** Every file in a [release](https://github.com/Olexify/Leonote/releases) has a `.sha256` beside it.
+  Windows: `certutil -hashfile Leonote-windows-setup.exe SHA256`. Linux: `sha256sum -c Leonote-linux.deb.sha256`.
+  The line it prints should match the `.sha256` file.
+- **The source.** Each version is tagged here (`v1.0.3`, ...): the code that was built is the code you can read.
+- **Updates are signed.** Before installing an update, the app checks its signature against the public key in
+  [`src-tauri/tauri.conf.json`](src-tauri/tauri.conf.json); a file signed by anyone else is refused.
+- **A scan.** Upload a download to [VirusTotal](https://www.virustotal.com) if you like a second opinion.
+
+What this does not prove: the builds are made on GitHub's build machines and are not byte-for-byte reproducible yet,
+so matching a checksum shows the file is the one we published, not that you could rebuild the same bytes.
+
 ## A quick look
 
 | | |

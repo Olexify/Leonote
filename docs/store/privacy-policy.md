@@ -1,9 +1,9 @@
 # Leonote privacy policy
 
-Last updated: 18 November 2026
+Last updated: 19 November 2026
 
-This is the whole policy for the Leonote desktop app and the leonote.app website. It replaces the version of
-10 October 2026.
+This is the whole policy for the Leonote desktop app, the Leonote Android app (a preview) and the leonote.app
+website. It replaces the version of 18 November 2026.
 
 ## Summary
 
@@ -76,6 +76,10 @@ as any internet request does.
   token) and your Google app's client secret are stored on your computer encrypted for your Windows account; the
   short-lived access token (an hour) is kept only in memory while Leonote runs. Signing out in Settings asks Google to
   revoke the sign-in and removes them from this computer; you can also revoke access at myaccount.google.com.
+- **On an Android phone** there is no Windows account to encrypt for. API keys and sign-ins are kept as they are in
+  the app's own storage, which Android closes to other apps, and Android's app backup is switched off for Leonote so
+  that storage is not copied to a Google account. A phone that is rooted, or unlocked in someone else's hands, does
+  not have that protection. Uninstalling the app removes them.
 
 ### Passwords you keep in Leonote
 
