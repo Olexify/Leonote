@@ -17,6 +17,9 @@
   .db-row { cursor: pointer; }
   .db-row .db-sub { color: var(--text-3); font-size: 12px; font-variant-numeric: tabular-nums; flex: none; }
   .bp-foot { justify-self: start; }
+  #prefs { display: grid; gap: 2px; }
+  #prefs[hidden] { display: none; }
+  #settings.is-on { color: var(--accent); }
   /* the time it has left, along the bottom edge, as the in-app cards do */
   .cc-bar[hidden] { display: none; }
   /* the resize grip: a soft arc hugging the rounded corner (as Kitsumi draws it), shown on hover */
@@ -30,10 +33,11 @@
 <body>
   <div class="db-card" id="card">
     <div class="db-card-head" id="head"><span id="ico"></span><b id="title">Break</b>
-      <button class="icon-btn" id="settings" title="Settings for this card (on the Timer page)"></button>
+      <button class="icon-btn" id="settings" title="This card's settings"></button>
       <button class="icon-btn" id="close" title="Close"></button>
     </div>
     <div id="list"></div>
+    <div id="prefs" hidden></div>
     <button class="link-btn bp-foot" id="open">Open Leonote</button>
     <div class="cc-bar" id="clock" hidden><div class="cc-bar-fill" id="clockFill"></div></div>
     <div class="grip" id="grip"></div>

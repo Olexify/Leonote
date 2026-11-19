@@ -339,7 +339,7 @@ export function mountTimer(app, el) {
   paintRange();
 
   el.append(h("div", { class: "view-inner focus-view" },
-    h("header", { class: "vh" }, h("div", {}, h("h1", { class: "vh-title", text: "Timer" }), h("div", { class: "vh-sub", text: "Focus timer · Alt+P start or pause, from anywhere in the app" }))),
+    h("header", { class: "vh" }, h("div", {}, h("h1", { class: "vh-title", text: "Timer" }), h("div", { class: "vh-sub kbd-hint", text: "Focus timer · Alt+P start or pause, from anywhere in the app" }))),
     h("div", { class: "focus-top" },
       h("section", { class: "card pomo-card" },
         face,

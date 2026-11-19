@@ -2022,6 +2022,9 @@ pub fn run() {
             // installs a new version on a click (update.rs); nothing is fetched by itself
             .plugin(tauri_plugin_updater::Builder::new().build());
     }
+    // a phone hands over picked files as content links, which only this plugin can open (grant.rs: pick_open, pick_save)
+    #[cfg(target_os = "android")]
+    { builder = builder.plugin(tauri_plugin_fs::init()); }
     trace("building app");
     let app = builder
         .on_page_load(|_w, p| match p.event() {
@@ -2265,7 +2268,7 @@ pub fn run() {
             trashbin::trash_open,
             outpost::external_allow,
             external::unindexed_find, external::unindexed_names, external::no_index_set,
-            grant::pick_open, grant::pick_save,
+            grant::pick_open, grant::pick_save, grant::pick_save_done,
             script::script_open, script::script_start, script::script_path,
             claude_import::claude_import, update::update_check, update::update_fetch, update::update_apply,
             drive::drive_status, drive::drive_connect, drive::drive_disconnect, drive::drive_sync,

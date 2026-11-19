@@ -10,6 +10,7 @@ const send = (p) => T.event.emitTo("main", "breakpop:cmd", p);
 const win = T.window.getCurrentWindow();
 let sized = false; // resized by hand: the height is the user's from then on
 let run = 0;
+let prefs = {}, showPrefs = false; // the card's own settings, and whether its gear has them open
 
 let headIco = icon("dumbbell");
 $("ico").replaceWith(headIco);
@@ -60,19 +61,44 @@ function paint(st) {
     row.tabIndex = 0;
     row.setAttribute("role", "checkbox");
     row.setAttribute("aria-checked", String(!!it.done));
-    row.append(box, icon(it.kind === "eyes" ? "eye" : it.kind === "water" ? "drop" : "dumbbell"), name, sub);
+    row.append(box, icon(it.kind === "eyes" ? "eye" : it.kind === "water" ? "drop" : it.kind === "habit" ? "flame" : "dumbbell"), name, sub);
     const tick = () => send({ cmd: "tick", id: it.id, done: !it.done });
     row.onclick = tick;
     row.onkeydown = (e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); tick(); } };
     return row;
   }));
+  if (st.prefs) prefs = st.prefs;
+  drawPrefs();
   if (st.endAt !== undefined) clock(st.endAt);
   requestAnimationFrame(fit);
+}
+// the gear: this card's settings, on the card - changed here, kept by Leonote (Timer page, the same switches)
+function drawPrefs() {
+  $("list").hidden = showPrefs;
+  $("prefs").hidden = !showPrefs;
+  $("settings").classList.toggle("is-on", showPrefs);
+  $("open").textContent = showPrefs ? "All break settings in Leonote" : "Open Leonote";
+  if (!showPrefs) return;
+  $("prefs").replaceChildren(...[["voice", "Say it out loud"], ["stay", "Keep it until closed"], ["pop", "On the desktop when Leonote is hidden"]].map(([key, label]) => {
+    const on = !!prefs[key];
+    const box = Object.assign(document.createElement("input"), { type: "checkbox", checked: on });
+    box.onclick = (e) => e.preventDefault();
+    const row = document.createElement("div");
+    row.className = "db-row";
+    row.tabIndex = 0;
+    row.setAttribute("role", "switch");
+    row.setAttribute("aria-checked", String(on));
+    row.append(box, Object.assign(document.createElement("span"), { className: "db-name", textContent: label }));
+    const flip = () => { prefs[key] = !on; drawPrefs(); send({ cmd: "set", key, value: !on }); };
+    row.onclick = flip;
+    row.onkeydown = (e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); } };
+    return row;
+  }));
 }
 T.event.listen("breakpop:show", (e) => paint(e.payload)).then(() => send({ cmd: "hello" }));
 $("close").onclick = () => { send({ cmd: "closed" }); win.close(); };
 addEventListener("keydown", (e) => { if (e.key === "Escape") $("close").onclick(); });
-$("settings").onclick = () => send({ cmd: "settings" });
-$("open").onclick = () => send({ cmd: "open" });
+$("settings").onclick = () => { showPrefs = !showPrefs; drawPrefs(); requestAnimationFrame(fit); };
+$("open").onclick = () => send({ cmd: showPrefs ? "settings" : "open" });
 $("head").addEventListener("mousedown", (e) => { if (e.button === 0 && !e.target.closest("button")) win.startDragging(); });
 $("grip").addEventListener("mousedown", (e) => { if (e.button === 0) { e.preventDefault(); sized = true; win.startResizeDragging("SouthEast"); } });

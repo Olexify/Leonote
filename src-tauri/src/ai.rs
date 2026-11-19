@@ -64,11 +64,18 @@ pub(crate) fn unseal(sealed: &[u8]) -> Result<Vec<u8>, String> {
     }
 }
 
-#[cfg(not(windows))]
+// A phone: kept as they are in the app's own storage, which Android closes to every other app (the owner's choice,
+// 19 November 2026). They never leave it: not in a backup, not in the vault, not in a sync. The hardware keystore later.
+#[cfg(target_os = "android")]
+pub(crate) fn seal(plain: &[u8]) -> Result<Vec<u8>, String> { Ok(plain.to_vec()) }
+#[cfg(target_os = "android")]
+pub(crate) fn unseal(sealed: &[u8]) -> Result<Vec<u8>, String> { Ok(sealed.to_vec()) }
+
+#[cfg(not(any(windows, target_os = "android")))]
 pub(crate) fn seal(_: &[u8]) -> Result<Vec<u8>, String> {
     Err("keys can only be kept on Windows for now".into())
 }
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "android")))]
 pub(crate) fn unseal(_: &[u8]) -> Result<Vec<u8>, String> {
     Err("keys can only be kept on Windows for now".into())
 }

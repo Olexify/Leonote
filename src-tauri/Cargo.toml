@@ -1,6 +1,6 @@
 [package]
 name = "leonote-rs"
-version = "1.0.2"
+version = "1.0.3"
 description = "Leonote - instant local-first notes and tasks"
 authors = ["Olexify.dev"]
 license-file = "../LICENSE"
@@ -54,6 +54,10 @@ lofty = "0.25"
 md-5 = "0.10"
 sha2 = "0.10"
 getrandom = "0.2"
+
+# Android's file pickers give content links; this opens them (the dialog plugin already brings it, so nothing new is downloaded)
+[target.'cfg(target_os = "android")'.dependencies]
+tauri-plugin-fs = "2"
 
 [target.'cfg(windows)'.dependencies]
 # the same versions Tauri's own WebView2 layer uses, for one settings call

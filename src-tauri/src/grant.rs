@@ -225,6 +225,8 @@ pub async fn pick_open(app: tauri::AppHandle, opts: serde_json::Value) -> Result
         let mut b = app.dialog().file();
         if let Some(t) = opts["title"].as_str() { b = b.set_title(t); }
         if let Some(d) = opts["defaultPath"].as_str() { b = start_at(b, d); }
+        // Android's picker knows files by kind, not by ending: a filter for an ending of our own would grey every file out
+        #[cfg(not(target_os = "android"))]
         for f in opts["filters"].as_array().into_iter().flatten() {
             let exts: Vec<String> = f["extensions"].as_array().into_iter().flatten().filter_map(|e| e.as_str().map(String::from)).collect();
             let refs: Vec<&str> = exts.iter().map(String::as_str).collect();
@@ -237,7 +239,7 @@ pub async fn pick_open(app: tauri::AppHandle, opts: serde_json::Value) -> Result
             (true, true) => b.blocking_pick_folders().unwrap_or_default(),
             (false, false) => b.blocking_pick_file().into_iter().collect(),
             (false, true) => b.blocking_pick_files().unwrap_or_default(),
-        }.into_iter().filter_map(|f| f.into_path().ok()).collect();
+        }.into_iter().enumerate().filter_map(|(i, f)| local(&app, f, i)).collect();
         for p in &paths { if dir { grant_dir(p) } else { grant(p) } }
         let s: Vec<serde_json::Value> = paths.iter().map(|p| serde_json::Value::String(p.to_string_lossy().into_owned())).collect();
         Ok(if many { serde_json::Value::Array(s) } else { s.into_iter().next().unwrap_or(serde_json::Value::Null) })
@@ -252,15 +254,83 @@ pub async fn pick_save(app: tauri::AppHandle, opts: serde_json::Value) -> Result
         let mut b = app.dialog().file();
         if let Some(t) = opts["title"].as_str() { b = b.set_title(t); }
         if let Some(d) = opts["defaultPath"].as_str() { b = start_at(b, d); }
+        // Android's picker knows files by kind, not by ending: a filter for an ending of our own would grey every file out
+        #[cfg(not(target_os = "android"))]
         for f in opts["filters"].as_array().into_iter().flatten() {
             let exts: Vec<String> = f["extensions"].as_array().into_iter().flatten().filter_map(|e| e.as_str().map(String::from)).collect();
             let refs: Vec<&str> = exts.iter().map(String::as_str).collect();
             b = b.add_filter(f["name"].as_str().unwrap_or(""), &refs);
         }
-        let p = b.blocking_save_file().and_then(|f| f.into_path().ok());
+        let p = b.blocking_save_file().and_then(|f| save_place(&app, f, opts["defaultPath"].as_str().unwrap_or("file")));
         if let Some(p) = &p { grant(p); }
         Ok(p.map(|p| p.to_string_lossy().into_owned()))
     }).await.map_err(|e| e.to_string())?
+}
+
+/// A picked file as a path. A computer gives one; Android gives a content link, so the file is copied into the app's
+/// own cache first and that copy's path is given (the copies of the pick before are cleared).
+#[cfg(not(target_os = "android"))]
+fn local(_: &tauri::AppHandle, f: tauri_plugin_dialog::FilePath, _: usize) -> Option<PathBuf> { f.into_path().ok() }
+#[cfg(target_os = "android")]
+fn local(app: &tauri::AppHandle, f: tauri_plugin_dialog::FilePath, i: usize) -> Option<PathBuf> {
+    use tauri::Manager;
+    use tauri_plugin_fs::{FsExt, OpenOptions};
+    let url = match f { tauri_plugin_dialog::FilePath::Path(p) => return Some(p), url => url };
+    let dir = app.path().cache_dir().ok()?.join("picked");
+    // ponytail: one pick's copies at a time - a second pick while the first is still being read would pull it away; a folder per pick if that ever happens
+    if i == 0 { let _ = std::fs::remove_dir_all(&dir); }
+    std::fs::create_dir_all(&dir).ok()?;
+    let to = dir.join(format!("picked-{}", i));
+    let mut o = OpenOptions::new();
+    o.read(true);
+    let mut src = app.fs().open(url, o).ok()?;
+    let mut out = std::fs::File::create(&to).ok()?;
+    std::io::copy(&mut src, &mut out).ok()?;
+    Some(to)
+}
+
+/// Where a save goes. A computer: the path picked. Android: a file in the app's own cache, which `pick_save_done`
+/// copies to the place picked once it is written.
+#[cfg(not(target_os = "android"))]
+fn save_place(_: &tauri::AppHandle, f: tauri_plugin_dialog::FilePath, _: &str) -> Option<PathBuf> { f.into_path().ok() }
+#[cfg(target_os = "android")]
+static SAVING: Mutex<Vec<(PathBuf, tauri_plugin_dialog::FilePath)>> = Mutex::new(Vec::new());
+#[cfg(target_os = "android")]
+fn save_place(app: &tauri::AppHandle, f: tauri_plugin_dialog::FilePath, name: &str) -> Option<PathBuf> {
+    use tauri::Manager;
+    let url = match f { tauri_plugin_dialog::FilePath::Path(p) => return Some(p), url => url };
+    let dir = app.path().cache_dir().ok()?.join("saving");
+    std::fs::create_dir_all(&dir).ok()?;
+    let name: String = Path::new(name).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "file".into());
+    let tmp = dir.join(name);
+    let mut l = SAVING.lock().unwrap_or_else(|e| e.into_inner());
+    l.retain(|(p, _)| p != &tmp);
+    l.push((tmp.clone(), url));
+    Some(tmp)
+}
+
+/// The page wrote the file a save dialog gave it. A computer has nothing more to do; on Android the file goes from the
+/// app's cache to the place picked, and an error here means it did not arrive.
+#[tauri::command]
+pub async fn pick_save_done(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    #[cfg(target_os = "android")]
+    {
+        use tauri_plugin_fs::{FsExt, OpenOptions};
+        let tmp = PathBuf::from(&path);
+        let url = { let mut l = SAVING.lock().unwrap_or_else(|e| e.into_inner()); l.iter().position(|(p, _)| p == &tmp).map(|i| l.remove(i).1) };
+        let Some(url) = url else { return Ok(()) };
+        return tauri::async_runtime::spawn_blocking(move || {
+            let mut o = OpenOptions::new();
+            o.write(true).truncate(true).create(true);
+            let mut out = app.fs().open(url, o).map_err(|e| format!("could not write to the place picked: {}", e))?;
+            let mut src = std::fs::File::open(&tmp).map_err(|e| e.to_string())?;
+            std::io::copy(&mut src, &mut out).map_err(|e| format!("could not write to the place picked: {}", e))?;
+            let _ = std::fs::remove_file(&tmp);
+            Ok(())
+        }).await.map_err(|e| e.to_string())?;
+    }
+    #[cfg(not(target_os = "android"))]
+    { let _ = (app, path); Ok(()) }
 }
 
 /// A dialog's starting place: a folder opens there; a file's path opens its folder with its name filled in.

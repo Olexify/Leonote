@@ -6249,19 +6249,35 @@ async function start() {
       ["home", "home", "Home", () => { drawer(false); app.openView("home"); }],
       ["tasks", "checkSquare", "Tasks", () => { drawer(false); app.openView("tasks"); }],
       ["today", "calendar", "Today", () => { drawer(false); app.run("daily"); }],
-      ["search", "search", "Search", () => { drawer(false); app.run("switcher"); }],
+      ["more", "grid", "More", () => { drawer(false); sheet(!sheetEl.classList.contains("is-open")); }],
     ];
+    // More: the views the bar has no room for, as a sheet over the bottom - every part of Leonote within two taps
+    const MORE = [["habits", "flame", "Habits"], ["calendar", "calendar", "Calendar"], ["timer", "clock", "Timer"], ["focus", "focus", "Focus"], ["fit", "dumbbell", "Workout"], ["assistant", "sparkles", "Assistant"], ["graph", "graph", "Graph"], ["music", "music", "Player"], ["settings", "settings", "Settings"]];
+    const sheetEl = h("div", { class: "phone-sheet", role: "dialog", "aria-label": "More views" },
+      MORE.map(([view, ic, name]) => h("button", { class: "phone-sheet-btn", dataset: { view }, onclick: () => { sheet(false); app.openView(view); } }, h("span", { class: "phone-sheet-ico" }, icon(ic)), h("span", { text: name }))));
+    const sheetScrim = h("div", { class: "phone-sheet-scrim", onclick: () => sheet(false) });
+    const sheet = (open) => { sheetEl.classList.toggle("is-open", open); sheetScrim.classList.toggle("is-open", open); sheetEl.inert = !open; paint(); };
+    sheetEl.inert = true;
+    root.append(sheetScrim, sheetEl);
+    // the top bar says where you are, and search sits at its right end
+    const titleEl = h("div", { class: "phone-title" });
+    $(".tb-left").append(titleEl);
+    $(".tb-right").append(h("button", { class: "tb-btn phone-search", "aria-label": "Search", onclick: () => { drawer(false); sheet(false); app.run("switcher"); } }, icon("search")));
     for (const [key, ic, name, run] of items) nav.append(h("button", { class: "phone-btn", dataset: { key }, "aria-label": name, onclick: run }, icon(ic), h("span", { text: name })));
     // a tap beside the open drawer closes it
     const scrim = h("div", { class: "phone-scrim", onclick: () => drawer(false) });
     root.append(scrim, nav);
     const paint = () => {
       const t = cur();
-      for (const b of nav.children) b.classList.toggle("is-on", b.dataset.key === "notes" ? !!app.settings.sidebar : !!t && t.kind === "view" && t.view === b.dataset.key);
+      const view = t && t.kind === "view" ? t.view : "";
+      const more = sheetEl.classList.contains("is-open");
+      for (const b of nav.children) b.classList.toggle("is-on", b.dataset.key === "more" ? more || MORE.some(([v]) => v === view) : !more && (b.dataset.key === "notes" ? !!app.settings.sidebar : view === b.dataset.key));
+      for (const b of sheetEl.children) b.classList.toggle("is-on", b.dataset.view === view);
+      titleEl.textContent = document.title.replace(/ - Leonote$/, "");
     };
     // the drawer starts shut and shuts when something opens from it
     if (app.settings.sidebar) drawer(false);
-    app.bus.on("view", () => { if (app.settings.sidebar) drawer(false); paint(); });
+    app.bus.on("view", () => { if (app.settings.sidebar) drawer(false); sheet(false); });
     app.bus.on("settings", (k) => { if (k === "sidebar") paint(); });
     paint();
     // no slide at startup: the drawer is simply shut when the app appears
@@ -6288,6 +6304,7 @@ async function start() {
     window.addEventListener("popstate", () => {
       const dlg = document.querySelector("#overlay-root > *");
       if (dlg) document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      else if (sheetEl.classList.contains("is-open")) sheet(false);
       else if (app.settings.sidebar) drawer(false);
       else if (document.activeElement && document.activeElement.closest && document.activeElement.closest(".cm-content")) document.activeElement.blur();
       else if (trailStep(-1) >= 0) app.run("back");

@@ -67,6 +67,7 @@ export async function createBackup(app) {
   try {
     await app.flushAll();
     const r = await host.backupExport(path, password, includeVault, app.settings.backupCompression || "balanced");
+    await host.saveDone(path);
     if (typeof t === "function") t();
     const skipped = (r.skipped || []).length;
     app.toast(`Backup saved · ${fmtSize(r.bytes)} · ${(r.data_files || []).length} data files${includeVault ? `, ${r.vault_files ?? 0} notes and files` : ""}${skipped ? ` · ${skipped} could not be read and were left out` : ""}`, { ms: 8000, action: { label: "Show", run: () => host.externalReveal(path).catch(() => {}) } });

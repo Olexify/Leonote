@@ -89,11 +89,15 @@ export function mountHabits(app, el) {
 
     const rows = d.habits.map((hb) => {
       const streak = streakOf(d, hb.id, today);
-      const name = h("div", { class: "hg-name", title: "Double-click to rename" }, h("span", { class: "hg-label", text: hb.name }));
+      const part = { start: "at the start of the day", middle: "in the middle of the day", end: "at the end of the day", any: "any time" }[hb.inBreaks];
+      const name = h("div", { class: "hg-name", title: "Double-click to rename" + (part ? ` · comes up in breaks ${part}` : "") }, h("span", { class: "hg-label", text: hb.name }), part ? icon("dumbbell") : null);
       name.addEventListener("dblclick", () => rename(hb, name.firstChild));
       const items = () => [
         (() => { const r = bestOf(d, hb.id); return { header: `Best: ${r.best} day${r.best === 1 ? "" : "s"} in a row · ${r.total} in all`, plain: true }; })(),
         { label: "Rename", icon: "edit", run: () => rename(hb, name.firstChild) },
+        // it can come up in a break, with the exercise: at a part of the day, or any time (Timer › Breaks)
+        { label: "In breaks", icon: "dumbbell", sub: [["", "Not in breaks"], ["start", "Start of the day (before noon)"], ["middle", "Middle of the day (noon to 5 pm)"], ["end", "End of the day (after 5 pm)"], ["any", "Any time"]]
+          .map(([v, label]) => ({ label, checked: (hb.inBreaks || "") === v, run: () => { if (v) hb.inBreaks = v; else delete hb.inBreaks; app.saveHabits(); render(); } })) },
         d.habits.indexOf(hb) > 0 ? { label: "Move up", icon: "arrowUp", run: () => move(hb, -1) } : null,
         d.habits.indexOf(hb) < d.habits.length - 1 ? { label: "Move down", icon: "arrowDown", run: () => move(hb, 1) } : null,
         { label: "Delete habit", icon: "trash", danger: true, run: () => remove(hb) },

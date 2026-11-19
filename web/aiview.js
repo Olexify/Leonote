@@ -847,7 +847,7 @@ export function mountAssistant(app, el, { onChange = null, onProvider = null, on
     };
     setup.replaceChildren(
       h("div", { class: "ai-setup-head" }, h("h2", { text: "Providers" }), h("span", { class: "ai-gap" }), h("button", { class: "icon-btn", title: "Done", onclick: () => { showSetup = false; paint(); } }, icon("x"))),
-      h("p", { class: "ai-setup-note", text: "Your own keys, your own accounts: Leonote has no server in between. A key is sealed by Windows for you on this computer, kept outside the vault and out of backups, and never shown again - not even here." }),
+      h("p", { class: "ai-setup-note", text: "Your own keys, your own accounts: Leonote has no server in between. " + (document.documentElement.classList.contains("is-phone") ? "A key is kept in Leonote’s own storage on this phone, which Android closes to other apps" : "A key is sealed by Windows for you on this computer") + ", kept outside the vault and out of backups, and never shown again - not even here." }),
       ...list2.map(card),
       ...[["With your own key", (x) => !x.cli && !x.local && x.preset !== "custom"], ["No key - on this computer or through an app you are signed in to", (x) => x.cli || x.local || x.preset === "custom"]].map(([label, want]) =>
         h("div", { class: "ai-add" }, h("span", { text: label + ":" }), PRESETS.filter(want).map((pre) => h("button", { class: "chip-btn", title: pre.keyHint || "", onclick: () => {

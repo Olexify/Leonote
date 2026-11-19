@@ -236,6 +236,8 @@ export const host = {
   // native save/open dialogs; the browser mock answers with a fixed path
   // through Leonote itself (grant.rs): what the user picks in these dialogs is theirs, and Leonote may then write there
   dialogSave: (opts) => (window.__TAURI__ && window.__TAURI__.dialog ? call("pick_save", { opts: opts || {} }) : Promise.resolve(backend.mockPath || null)),
+  // after writing the file a save dialog gave: on a phone this carries it to the place picked (nothing to do on a computer)
+  saveDone: (path) => (window.__TAURI__ && window.__TAURI__.dialog ? call("pick_save_done", { path }) : Promise.resolve()),
   dialogOpen: (opts) => (window.__TAURI__ && window.__TAURI__.dialog ? call("pick_open", { opts: opts || {} }) : Promise.resolve((backend.dialogOpen && backend.dialogOpen(opts)) || backend.mockPath || null)),
   writeFile: (path, bytes) => backend.invoke("file_write", bytes, { headers: { "x-path": encodeURIComponent(path) } }),
   pasteFiles: (dir) => call("paste_files", { dir }),

@@ -61,12 +61,22 @@ export function pickMove(have, sets = [], skip = [], own = [], base = MOVES, def
   return { name: m.ex, reps: l && l.reps ? l.reps : m.reps || 0, dur: l && l.dur ? l.dur : m.dur || 0, w: l && l.w ? l.w : m.w || 0, unit: (l && l.unit) || m.unit || "kg" };
 }
 
-/** What one break asks for. kinds: of "move", "eyes", "water". */
-export function planBreak({ kinds, have, own, base, defs }, data, t) {
+/** The part of the day a time is in, for habits that come up in breaks: before noon, noon to 5 pm, after. */
+export const dayPart = (t) => { const hr = Number(String(t).slice(11, 13)); return hr < 12 ? "start" : hr < 17 ? "middle" : "end"; };
+
+/** What one break asks for. kinds: of "move", "eyes", "water". `habits`: those set to come up in breaks
+ *  ({ id, name, inBreaks }), less the ones done today - one of them, at random, comes with the exercise. */
+export function planBreak({ kinds, have, own, base, defs, habits = [], rnd = Math.random }, data, t) {
   const today = onDay(data.breaks, String(t).slice(0, 10));
   const out = [];
   const mv = kinds.includes("move") ? pickMove(have, data.sets, [], own, base, defs, data.breaks.filter((b) => b.kind === "move")) : null;
   if (mv) out.push({ id: uuid(), t, kind: "move", ...mv, done: false });
+  // a habit for this part of the day that has not come up in the last hour
+  if (kinds.includes("move")) {
+    const lately = (id) => today.some((b) => b.kind === "habit" && b.habit === id && Date.parse(t) - Date.parse(b.t) < 60 * 60000);
+    const pool = habits.filter((hb) => (hb.inBreaks === "any" || hb.inBreaks === dayPart(t)) && !lately(hb.id));
+    if (pool.length) { const hb = pool[Math.min(pool.length - 1, Math.floor(rnd() * pool.length))]; out.push({ id: uuid(), t, kind: "habit", habit: hb.id, name: hb.name, done: false }); }
+  }
   if (kinds.includes("eyes")) { const e = EYES[today.filter((b) => b.kind === "eyes").length % EYES.length]; out.push({ id: uuid(), t, kind: "eyes", name: e.name, reps: e.reps || 0, dur: e.dur || 0, done: false }); }
   // water at most once an hour
   const lastWater = today.filter((b) => b.kind === "water").map((b) => String(b.t)).sort().pop();
@@ -107,7 +117,7 @@ export function xpFor(d, id, set) {
   const b = d.breaks.find((x) => x.id === id);
   if (!b || !b.done || b.xp) return 0;
   b.xp = true;
-  return b.kind === "move" ? set : 1;
+  return b.kind === "move" ? set : b.kind === "habit" ? 0 : 1; // a habit earns its own XP when it is ticked
 }
 /** A line typed for an exercise of one's own: "kettlebell halo 10", "wall sit 30 sec", "farmer walk 20 kg 40 sec". */
 export function ownMove(line, unit) {
@@ -151,7 +161,17 @@ export function mountDeskBreaks(app) {
       has ? { label: "Back to last time's numbers", icon: "undo", run: () => { const n = { ...defs() }; delete n[k]; app.setSetting("deskDefaults", n); } } : null,
     ]);
   }
-  const reward = (d, ids) => { const n = ids.reduce((k, id) => k + xpFor(d, id, XP.workoutSet), 0); if (n) app.stats.award(n); };
+  const reward = (d, ids) => {
+    const n = ids.reduce((k, id) => k + xpFor(d, id, XP.workoutSet), 0);
+    if (n) app.stats.award(n);
+    // a habit ticked (or unticked) in a break is ticked on the Habits page too, for today
+    for (const id of ids) {
+      const b = d.breaks.find((x) => x.id === id);
+      if (!b || b.kind !== "habit" || !app.toggleHabit) continue;
+      const day = String(b.t).slice(0, 10), on = ((app.habits && app.habits.log && app.habits.log[day]) || []).includes(b.habit);
+      if (on !== !!b.done) app.toggleHabit(b.habit, day);
+    }
+  };
   let data = null;
   const lists = new Set(); // every drawn list of tick boxes: { el, ids() }
   const paint = () => { popSend(); for (const l of lists) { if (l.temp && !l.el.isConnected && l.seen) lists.delete(l); else { l.seen = l.seen || l.el.isConnected; l.draw(); } } };
@@ -162,7 +182,7 @@ export function mountDeskBreaks(app) {
   function popSend() {
     if (!pop || !app.host.emitTo) return;
     const items = popItems();
-    app.host.emitTo("breakpop", "breakpop:show", { title: pop.title, items, endAt: S.deskPopStay === true ? 0 : pop.endAt, look: { theme: document.documentElement.dataset.theme, style: document.documentElement.getAttribute("style") || "" } }).catch(() => {});
+    app.host.emitTo("breakpop", "breakpop:show", { title: pop.title, items, endAt: S.deskPopStay === true ? 0 : pop.endAt, look: { theme: document.documentElement.dataset.theme, style: document.documentElement.getAttribute("style") || "" }, prefs: { voice: S.deskVoice !== false, stay: S.deskPopStay === true, pop: S.deskPopOut !== false } }).catch(() => {});
     // all of it ticked: it goes by itself, a moment later
     if (pop.ticked && items.length && items.every((x) => x.done)) { clearTimeout(pop.timer); pop.timer = setTimeout(popClose, 1500); }
   }
@@ -185,6 +205,14 @@ export function mountDeskBreaks(app) {
     else if (c === "tick" && pop && pop.ids.includes(p.id)) { pop.ticked = true; if (p.done) app.sound("done"); change((d) => { setDone(d, p.id, !!p.done); reward(d, [p.id]); }); }
     // closed by hand: its voice stops at once, and its timer with it (as the in-app card does)
     else if (c === "closed") { if (pop) { clearTimeout(pop.timer); if (timer && pop.ids.includes(timer.id)) stopTimer(); } pop = null; hush(); }
+    // the card's own settings, changed on the card (its gear): applied at once, here as on the Timer page
+    else if (c === "set" && pop) {
+      const v = !!p.value;
+      if (p.key === "voice") { app.setSetting("deskVoice", v); if (!v) hush(); }
+      else if (p.key === "stay") { app.setSetting("deskPopStay", v); clearTimeout(pop.timer); if (!v && pop.endAt < Date.now() + 15000) pop.endAt = Date.now() + 60000; pop.timer = v ? 0 : setTimeout(popClose, pop.endAt - Date.now()); } // its time again: at least a minute
+      else if (p.key === "pop") app.setSetting("deskPopOut", v);
+      popSend();
+    }
     else if (c === "settings") { popClose(); app.host.win.show().catch(() => {}); if (app.host.win.unminimize) app.host.win.unminimize().catch(() => {}); app.openView("timer"); setTimeout(() => { const el = document.querySelector(".db-panel"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }, 300); }
     else if (c === "open") { popClose(); app.host.win.show().catch(() => {}); if (app.host.win.unminimize) app.host.win.unminimize().catch(() => {}); app.openView("timer"); }
   });
@@ -254,7 +282,7 @@ export function mountDeskBreaks(app) {
     const cue = b.kind === "eyes" ? (EYES.find((e) => e.name === b.name) || {}).cue : info && info.cue;
     return h("div", { class: "db-row" + (b.done ? " is-done" : ""), title: cue ? cue + (b.kind === "move" ? " · right-click: make it the default, add a weight" : "") : b.kind === "move" ? "Right-click: make it the default, add a weight" : "", oncontextmenu: b.kind === "move" ? (e) => moveMenu(e, b) : null },
       h("input", { type: "checkbox", checked: !!b.done, "aria-label": b.name, onchange: (e) => { if (e.target.checked) app.sound("done"); change((d) => { setDone(d, b.id, e.target.checked); reward(d, [b.id]); }); } }),
-      icon(b.kind === "move" ? "dumbbell" : b.kind === "eyes" ? "eye" : "drop"),
+      icon(b.kind === "move" ? "dumbbell" : b.kind === "eyes" ? "eye" : b.kind === "habit" ? "flame" : "drop"),
       h("span", { class: "db-name", text: b.name }),
       b.kind === "move" && b.reps ? num(b, "reps", "×") : null,
       // a weight only once it has one (right-click › Add a weight): an empty "0 kg" pushed the card's close off its edge
@@ -287,10 +315,13 @@ export function mountDeskBreaks(app) {
     if (!ks.length) return;
     let ids = [];
     await change((d) => {
-      const items = planBreak({ kinds: ks, have: have(), own: own(), base: base(), defs: defs() }, d, localIso().slice(0, 19));
+      const now = localIso().slice(0, 19), doneToday = ((app.habits && app.habits.log && app.habits.log[now.slice(0, 10)]) || []);
+      const habits = ((app.habits && app.habits.habits) || []).filter((hb) => hb.inBreaks && !doneToday.includes(hb.id));
+      const items = planBreak({ kinds: ks, have: have(), own: own(), base: base(), defs: defs(), habits }, d, now);
       d.breaks.push(...items);
       ids = items.map((b) => b.id);
-      if (S.deskBreakAuto === true) { for (const id of ids) setDone(d, id, true); reward(d, ids); }
+      // counted for you: everything but a habit, which only you can say you did
+      if (S.deskBreakAuto === true) { const auto = items.filter((b) => b.kind !== "habit").map((b) => b.id); for (const id of auto) setDone(d, id, true); reward(d, auto); }
     });
     if (!ids.length) return;
     if (ks.includes("move") && !(data ? data.breaks : []).some((b) => ids.includes(b.id) && b.kind === "move")) app.toast("No exercise fits the equipment you picked - Timer › Breaks that move you", { ms: 5000 });

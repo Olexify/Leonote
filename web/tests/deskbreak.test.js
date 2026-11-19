@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { pickMove, planBreak, shape, setDone, setNumbers, swapMove, removeBreak, MOVES, EQUIPMENT } from "../deskbreak.js";
+import { pickMove, planBreak, shape, setDone, setNumbers, swapMove, removeBreak, dayPart, xpFor, MOVES, EQUIPMENT } from "../deskbreak.js";
 import { exerciseInfo } from "../fitprograms.js";
 
 test("break exercises: all known to the library, and only for equipment the user has", () => {
@@ -123,4 +123,20 @@ test("an exercise offered and skipped does not come straight back", () => {
   const first = pickMove([], [], [], own, []);
   const next = pickMove([], [], [], own, [], {}, [{ name: first.name, t: "2026-11-16T10:00:00" }]);
   assert.notEqual(next.name, first.name);
+});
+
+test("a habit set to come up in breaks joins the exercise at its part of the day, not again within the hour", () => {
+  assert.deepEqual(["09:00", "13:30", "18:00"].map((h) => dayPart(`2026-11-18T${h}:00`)), ["start", "middle", "end"]);
+  const habits = [{ id: "h1", name: "Stretch hamstrings", inBreaks: "start" }, { id: "h2", name: "Read 10 pages", inBreaks: "end" }, { id: "h3", name: "Floss", inBreaks: "any" }];
+  const d = shape({});
+  const at = (h, rnd = () => 0) => planBreak({ kinds: ["move"], have: [], habits, rnd }, d, `2026-11-18T${h}:00`).filter((b) => b.kind === "habit").map((b) => b.habit);
+  assert.deepEqual(at("09:00"), ["h1"], "the morning one first");
+  assert.deepEqual(at("09:00", () => 0.99), ["h3"], "or the any-time one, at random");
+  assert.deepEqual(at("18:00"), ["h2"]);
+  assert.deepEqual(planBreak({ kinds: ["eyes"], have: [], habits }, d, "2026-11-18T09:00:00").filter((b) => b.kind === "habit"), [], "only with the exercise");
+  d.breaks.push({ id: "x", t: "2026-11-18T09:00:00", kind: "habit", habit: "h1", name: "Stretch hamstrings", done: false });
+  assert.deepEqual(at("09:30"), ["h3"], "not the same one again within the hour");
+  assert.deepEqual(at("10:05"), ["h1"]);
+  d.breaks[0].done = true;
+  assert.equal(xpFor(d, "x", 5), 0, "a habit earns its own XP, not a workout set's");
 });
