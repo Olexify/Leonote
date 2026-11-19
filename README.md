@@ -20,6 +20,7 @@ Click one, it downloads the newest version:
 | **Windows 10 / 11** | [⬇ **Installer**](https://github.com/Olexify/Leonote/releases/latest/download/Leonote-windows-setup.exe) - open it, Leonote installs and starts. Or [one file, no install](https://github.com/Olexify/Leonote/releases/latest/download/Leonote-windows-portable.exe). |
 | **Ubuntu, Debian, Mint** | [⬇ **.deb**](https://github.com/Olexify/Leonote/releases/latest/download/Leonote-linux.deb) - double-click it to install. |
 | **Other Linux** | [⬇ **AppImage**](https://github.com/Olexify/Leonote/releases/latest/download/Leonote-linux.AppImage) - right-click › Properties › allow running as a program, then open it. |
+| **Android** (preview) | [⬇ **APK**](https://github.com/Olexify/Leonote/releases/latest/download/Leonote-android.apk) - open it on your phone and allow installs from your browser once. Android 7+, 64-bit phones. Not on Google Play yet. |
 
 Every version, with checksums (`.sha256`): [all releases](https://github.com/Olexify/Leonote/releases). The Windows builds are not code-signed yet, so Windows may show "Windows
 protected your PC" the first time: **More info › Run anyway**. The Linux build is new: a few features that lean on
@@ -41,6 +42,9 @@ You do not have to take our word for a download:
   Windows: `certutil -hashfile Leonote-windows-setup.exe SHA256`. Linux: `sha256sum -c Leonote-linux.deb.sha256`.
   The line it prints should match the `.sha256` file.
 - **The source.** Each version is tagged here (`v1.0.3`, ...): the code that was built is the code you can read.
+- **The Android app's signature.** Every version is signed with the same certificate, SHA-256
+  `9E:63:30:51:C1:5D:A2:87:2D:A5:86:07:39:9B:7F:17:A5:A7:6A:83:3C:BC:E4:EE:EA:7C:DE:61:05:2E:5C:D4`.
+  `apksigner verify --print-certs Leonote-android.apk` shows it; Android itself refuses an update signed by anyone else.
 - **Updates are signed.** Before installing an update, the app checks its signature against the public key in
   [`src-tauri/tauri.conf.json`](src-tauri/tauri.conf.json); a file signed by anyone else is refused.
 - **A scan.** Upload a download to [VirusTotal](https://www.virustotal.com) if you like a second opinion.
