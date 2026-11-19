@@ -95,7 +95,8 @@ async function start() {
   const ownWelcome = () => /^# Welcome to Leonote/.test((app.vault.get("Welcome.md") || {}).content || "");
   const app = {
     host,
-    packaged: !!boot.packaged, // the Microsoft Store (MSIX) build: a few choices show differently there
+    packaged: !!boot.packaged, // a store's build (Microsoft Store, Google Play): the store updates it, a few choices show differently there
+    store: boot.store || "", // which store: "Microsoft Store", "Google Play", or "" for a download
     device: String(boot.device || ""), // this computer's name (backup plans on a vault synced to several)
     bus: emitter(),
     vault: createVault(host),
@@ -3932,13 +3933,42 @@ async function start() {
       await shutdown(() => host.updateApply()); // everything saved as on a quit, then the new version takes over
     } catch (e) { updating = false; closing = false; toast(String(e), { kind: "error", ms: 8000 }); }
   };
+  let readyVersion = ""; // downloaded and checked, installed at the next quit
+  /** Telling the user, as loudly as the update file says: normal - a short message; important (and any security fix) -
+   *  a yellow one that stays until closed; critical - a red window that waits for an answer. Every one offers to update now. */
+  const notifyUpdate = (r, ready) => {
+    const restart = () => { updating = true; shutdown(() => host.updateApply()); };
+    const now = ready ? { label: "Restart now", run: restart } : r.installable ? { label: "Install", run: installUpdate } : { label: "Download page", run: () => app.openUrl(r.url) };
+    const what = r.level === "critical" ? "a critical update" : r.security ? "security fixes" : "";
+    const line = `Leonote ${r.latest} ${ready ? "is ready" : "is out"}${what ? ` - ${what}` : ""}. ${ready ? "It installs when you quit Leonote." : `You have ${r.current}.`}`;
+    if (r.level === "critical") {
+      const close = () => back.remove();
+      const back = h("div", { class: "dlg-back is-in" },
+        h("div", { class: "dlg upd-critical", role: "alertdialog", "aria-modal": "true" },
+          h("h3", { class: "dlg-title" }, icon("alert"), ` Critical update: Leonote ${r.latest}`),
+          h("p", { class: "dlg-text", text: (r.notes ? r.notes + " " : "") + "Please update as soon as you can." + (ready ? " It is downloaded and checked; restarting takes a moment, and everything is saved first." : "") }),
+          h("div", { class: "dlg-btns" },
+            h("button", { class: "btn", onclick: close }, "Later"),
+            h("button", { class: "btn btn-danger", onclick: () => { close(); now.run(); } }, now.label))));
+      document.getElementById("overlay-root").append(back);
+      return;
+    }
+    // important: stays until closed (a day at most), so it is seen when the user comes back
+    toast(line, { kind: r.level === "important" ? "update" : undefined, ms: r.level === "important" ? 864e5 : 20000, actions: [now, r.level === "important" ? { label: "Later", run: () => {} } : null] });
+  };
+  app.updateReady = () => readyVersion;
   app.checkUpdate = async ({ quiet = false } = {}) => {
-    if (app.packaged) { if (!quiet) toast("This copy comes from the Microsoft Store, which keeps it up to date", { ms: 3500 }); return; }
+    if (app.packaged) { if (!quiet) toast(`This copy comes from ${app.store || "the Microsoft Store"}, which keeps it up to date`, { ms: 3500 }); return; }
     try {
       const r = await host.updateCheck();
       app.setSetting("updateCheckedAt", Date.now());
-      if (r && r.newer) toast(`Leonote ${r.latest} is out${r.security ? " - with security fixes" : ""} (you have ${r.current})`, { ms: 20000, action: r.installable ? { label: "Install", run: installUpdate } : { label: "Download page", run: () => app.openUrl(r.url) } });
-      else if (!quiet) toast(`Leonote ${(r && r.current) || ""} is the latest`, { ms: 3000 });
+      if (!r || !r.newer) { if (!quiet) toast(`Leonote ${(r && r.current) || ""} is the latest`, { ms: 3000 }); return; }
+      // automatic (the default): an installable copy fetches it quietly and installs it at the next quit
+      if (r.installable && app.settings.updateAuto !== false && !updating && readyVersion !== r.latest) {
+        await host.updateFetch();
+        readyVersion = r.latest;
+      }
+      notifyUpdate(r, readyVersion === r.latest);
     } catch (e) { if (!quiet) toast(String(e), { kind: "error" }); }
   };
   /** "Read as script": the note in the script window - large type, scrolling by itself, kept out of recordings. */
@@ -6657,6 +6687,7 @@ async function start() {
     await Promise.race([work, wait(1000)]);
     try { localStorage.removeItem(PLUGINS_STARTING); } catch {} // a quit soon after start is no stuck plugin
     if (typeof then === "function") return then();
+    if (app.updateReady && app.updateReady()) return host.updateInstallQuit().catch(() => host.quit()); // the waiting update goes in now
     host.quit();
   }
   host.on("app:close-requested", shutdown);
@@ -6731,7 +6762,14 @@ async function start() {
     // the setting follows
     if (app.settings.launchAtLogin && !app.packaged) host.autostartRepoint().then((on) => { if (!on) app.setSetting("launchAtLogin", false); }, () => {});
     // a newer version, asked weekly - only when turned on (Settings › About); the Store's copy updates itself
-    if (app.settings.updateWeekly === true && !app.packaged && Date.now() - (Number(app.settings.updateCheckedAt) || 0) > 7 * 864e5) setTimeout(() => app.checkUpdate({ quiet: true }), 30000);
+    // a newer version: asked a minute after start, then once a day while Leonote runs (it lives in the tray for days);
+    // users are told of every update - with "Update automatically" on (the default) it is also fetched and installed at
+    // the next quit. The stores' copies update themselves.
+    if (!app.packaged) {
+      const due = () => { if (Date.now() - (Number(app.settings.updateCheckedAt) || 0) > 20 * 3600e3) app.checkUpdate({ quiet: true }); };
+      setTimeout(due, 60000);
+      setInterval(due, 3 * 3600e3);
+    }
     // the names of the notes in folders left out of indexing (nothing in them is read): links to them stay whole
     if ((app.settings.noIndex || []).length) host.unindexedNames().then((list) => {
       app.vault.setUnindexed(list || []);

@@ -248,7 +248,7 @@ export function createMockBackend() {
   const api = {
     boot: () => { if (/missing-vault/.test(location.search)) throw "vault-missing:D:/Notes"; return { vault: "C:\\Users\\you\\LeoNote", notes: [...notes.values()], folders: [...folders], tasks: structuredClone(tasks), habits: structuredClone(habits), settings, recurring: structuredClone(recurring), stats: structuredClone(stats), priorities: structuredClone(priorities), ms: 3.2,
       files: [...mockFiles],
-      positions: {}, vault_abs: "", data_dir: "user", data_root: "C:\\Users\\you\\.leonote", open_paths: [] }; },
+      positions: {}, vault_abs: "", data_dir: "user", data_root: "C:\\Users\\you\\.leonote", open_paths: [], ...(new URLSearchParams(location.search).has("play") ? { packaged: true, store: "Google Play" } : {}) }; }, // ?play: the Google Play build
     note_write: ({ path, content }) => { notes.set(path, { path, content, mtime: Date.now() }); return Date.now(); },
     vault_copy: ({ paths, dir }) => {
       const made = [];
@@ -445,7 +445,8 @@ export function createMockBackend() {
     unindexed_names: () => [],
     unindexed_find: ({ query }) => (/baka/i.test(query) ? [{ name: "log.md", path: "Chats/log.md", abs: "C:/Vault/Chats/log.md", snippet: "we talked about baka mitai" }] : []),
     no_index_set: () => null,
-    update_check: () => ({ current: "1.0.0", latest: "1.1.0", newer: true, url: "https://leonote.app/download", notes: "", security: true }),
+    // ?update=critical|important|normal tries how an update is told
+    update_check: () => { const l = new URLSearchParams(location.search).get("update") || "important"; return { current: "1.0.0", latest: "1.1.0", newer: true, url: "https://leonote.app/download", notes: l === "critical" ? "Fixes a problem that could lose notes saved during a sync." : "", security: l !== "normal", level: l, installable: false }; },
     claude_import: () => ({ added: 3, updated: 0, kept: 0, total: 3 }),
     tool_install: ({ tool, direct }) => { if (!direct) throw "DIRECT:https://example.org/" + tool + ".zip"; return "C:/tools/" + tool + ".exe"; },
     online_install: () => null,

@@ -61,7 +61,7 @@ export function mountPhone(app, el) {
   let busy = null; // { job, done, total, failed, remove }
   let picking = !!S.phonePicking; // Select mode: a click picks instead of opening
   // the drawer at the bottom: Folders, or a view over the whole phone (after a scan), or Compress
-  let mode = ["folders", "all", "search", "photos", "videos", "largest", "dupes", "compress"].includes(S.phoneMode) ? S.phoneMode : "folders";
+  let mode = ["folders", "all", "search", "photos", "videos", "media", "largest", "dupes", "compress"].includes(S.phoneMode) ? S.phoneMode : "folders";
   // Search: words in the name or the folder, kinds, size, dates, sorting - over the whole phone
   const F = { q: "", kinds: new Set(), min: "", max: "", from: "", to: "", sort: S.phoneFindSort || "new", list: !!S.phoneFindList };
   let index = null; // every file on the phone (a scan), for Photos, Videos, Largest and Duplicates
@@ -305,9 +305,9 @@ export function mountPhone(app, el) {
   let soon = 0;
   const paintSoon = () => { if (!soon) soon = requestAnimationFrame(() => { soon = 0; paint(); }); };
 
-  const MODES = [["folders", "Folders", "folder"], ["all", "Everything", "list"], ["search", "Search", "search"], ["photos", "Photos", "image"], ["videos", "Videos", "film"], ["largest", "Largest", "chart"], ["dupes", "Duplicates", "layers"], ["compress", "Compress", "shrink"]];
+  const MODES = [["folders", "Folders", "folder"], ["all", "Everything", "list"], ["search", "Search", "search"], ["photos", "Photos", "image"], ["videos", "Videos", "film"], ["media", "Photos + videos", "camera"], ["largest", "Largest", "chart"], ["dupes", "Duplicates", "layers"], ["compress", "Compress", "shrink"]];
   function paintDrawer() {
-    const count = (m) => (!index ? "" : m === "photos" ? index.filter((x) => kindOf(x) === "photo").length : m === "videos" ? index.filter((x) => kindOf(x) === "video").length : m === "dupes" ? dupes().length : "");
+    const count = (m) => (!index ? "" : m === "photos" ? index.filter((x) => kindOf(x) === "photo").length : m === "videos" ? index.filter((x) => kindOf(x) === "video").length : m === "media" ? index.filter((x) => kindOf(x) === "photo" || kindOf(x) === "video").length : m === "dupes" ? dupes().length : "");
     drawer.replaceChildren(...MODES.map(([m, n, ic]) => h("button", { class: "ph-dtab" + (mode === m ? " is-on" : ""), onclick: () => setMode(m) }, icon(ic), h("span", { text: n }), count(m) !== "" ? h("span", { class: "ph-dcount", text: String(count(m)) }) : null)));
   }
   function setMode(m) {
@@ -408,10 +408,11 @@ export function mountPhone(app, el) {
   }
   const source = () => (mode === "folders" ? items : index || []);
   const shown = () => {
-    if (mode === "photos" || mode === "videos") {
-      const k = mode === "photos" ? "photo" : "video";
+    // Photos + videos: both kinds in one list, as a phone's gallery shows them
+    if (mode === "photos" || mode === "videos" || mode === "media") {
+      const k = mode === "photos" ? ["photo"] : mode === "videos" ? ["video"] : ["photo", "video"];
       const by = sort === "size" ? (a, b) => b.size - a.size : sort === "name" ? (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }) : (a, b) => b.mtime - a.mtime;
-      return (index || []).filter((x) => kindOf(x) === k).sort(by);
+      return (index || []).filter((x) => k.includes(kindOf(x))).sort(by);
     }
     if (mode === "largest") return (index || []).slice().sort((a, b) => b.size - a.size).slice(0, 2000);
     if (mode === "search") return found().slice(0, 3000);
@@ -452,7 +453,7 @@ export function mountPhone(app, el) {
         mode === "dupes" && index && host.phoneFingerprints ? h("button", { class: "link-btn", title: "Read each one and compare what is inside - true copies stay grouped, look-alikes of the same size go. Reads every file of the groups (nothing is kept)", onclick: checkDupes }, dupesChecked ? "Checked ✓" : "Check they are really the same") : null,
         mode !== "folders" && index ? h("button", { class: "link-btn", onclick: () => (scanning ? host.phoneScanStop() : scan()) }, scanning ? "Stop scanning" : "Scan again") : null,
         h("span", { class: "ph-gap" }),
-        ...(mode === "folders" || mode === "all" || mode === "photos" || mode === "videos" ? [["date", "Newest"], ["size", "Biggest"], ["name", "Name"]].map(([v, n]) => chip(v, n, (x) => { sort = x; tileLimit = TILES; app.setSetting("phoneSort", x); paint(); }, sort)) : [])),
+        ...(mode === "folders" || mode === "all" || mode === "photos" || mode === "videos" || mode === "media" ? [["date", "Newest"], ["size", "Biggest"], ["name", "Name"]].map(([v, n]) => chip(v, n, (x) => { sort = x; tileLimit = TILES; app.setSetting("phoneSort", x); paint(); }, sort)) : [])),
       h("div", { class: "ph-acts" },
         h("button", { class: "ve-chip" + (picking ? " is-on" : ""), title: "Select mode: a click adds a file to the picked ones, another click takes it back. Without it: a click picks one file, Ctrl/Shift+click adds, a box dragged over them picks them all; a double-click opens", onclick: () => { picking = !picking; app.setSetting("phonePicking", picking); paintBar(); } }, icon("check"), "Select"),
         h("button", { class: "icon-btn", title: "Tile colours: by name family, big files marked", onclick: (e) => { const r = e.currentTarget.getBoundingClientRect(); menu(r.left, r.bottom + 4, [

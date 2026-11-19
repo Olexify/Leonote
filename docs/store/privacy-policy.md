@@ -1,16 +1,16 @@
 # Leonote privacy policy
 
-Last updated: 19 November 2026
+Last updated: 20 November 2026
 
 This is the whole policy for the Leonote desktop app, the Leonote Android app (a preview) and the leonote.app
-website. It replaces the version of 18 November 2026.
+website. It replaces the version of 19 November 2026.
 
 ## Summary
 
 - The Leonote app has no accounts, no servers that hold your data, no analytics, no telemetry, no crash reports of
   its own and no licence checks. Your notes, tasks and settings stay on your computer. It contacts the developer's
   own sites only for the two small things listed below: leonote.app for the version check, olexify.dev for the
-  donation goal (not in the Microsoft Store package).
+  donation goal (not in the Microsoft Store package or the Google Play app).
 - Leonote goes online only for features you use: opening a link or a video, an AI or speech service you add
   your own key for, a Google calendar you connect, a tool, add-on or plugin you install. Each is listed below, with what
   it sends and when.
@@ -57,8 +57,8 @@ as any internet request does.
 | **Sending playlist changes** | YouTube, through your own Google Cloud app | The changes you make to that playlist | Only for playlists you set to send; off by default |
 | **Songs from a web address** | The site of that address | A request for the file | When you add or play it |
 | **Links in notes** | The site of the link; with link cards, also the site holding the picture that page names for its card, which may be another site | A request for the page, naming itself as Leonote (a YouTube link is asked of YouTube's public oEmbed address instead) | When you paste a bare address (to get its title; can be switched off), when link cards are on (off by default) and the note is shown - with the site's small icon and the card's picture, with no click - or when you add a page as a source |
-| **Checking for a newer version** (copies not from the Microsoft Store; Settings › About) | leonote.app | A request for one small file that names the latest version - nothing about you or your notes | Only when you click "Check for updates", or once a week if you turn "Check weekly" on (off by default). A newer version is shown, with an Install button (installed copies) or its page to open in your browser; the check itself downloads nothing |
-| **Installing a newer version** (the Windows installer copy and the Linux AppImage) | GitHub (github.com and its download servers) | A download request for the list of the newest files and then the new version | Only when you click Install on a newer version. The download is checked against Leonote's signature before it is installed; nothing is installed by itself |
+| **Checking for a newer version** (copies not from an app store) | leonote.app | A request for one small file that names the latest version - nothing about you or your notes | About a minute after Leonote starts, then once a day while it runs, and when you click "Check for updates". A newer version is always shown, with an Install button (installed copies) or its page to open in your browser |
+| **Installing a newer version** (the Windows installer copy and the Linux AppImage) | GitHub (github.com and its download servers) | A download request for the list of the newest files and then the new version | With "Update automatically" on (the default; Settings › About), as soon as a newer version is found; it is installed when you quit Leonote, or at once if you click Restart now. With it off, only when you click Install. Either way the download is checked against Leonote's signature before it is installed |
 | **Pictures from the web in a note** (`![](https://...)`) | The site the picture is on | A request for the picture, as a browser makes | When you click "Load picture" on it (the default), or when the note is shown with Settings › "Pictures from the web" set to Always |
 | **The built-in browser** | The sites you open, and the search engine you pick (Google until you choose another) | What any browser sends to them | When you browse. Leonote adds no advertising and no trackers to the pages; it adds two small scripts of its own - one for Ctrl+wheel zoom, which also tells the Player when a page starts a video and lets the Player pause it or set its volume, and, while "Offer to save sign-ins" is on, one that notices a sign-in so Leonote can offer to keep it in your password vault (nothing is sent anywhere). |
 | **Microsoft Defender SmartScreen**, in the built-in browser | Microsoft | The addresses of pages and downloads, checked against known dangerous sites, as in Microsoft Edge | When you browse |
@@ -66,7 +66,7 @@ as any internet request does.
 | **Plugin search and plugins** (Settings › Plugins) | GitHub (raw.githubusercontent.com for the list; github.com for a plugin's download) | A download request | The list loads only when you open the search. A plugin downloads only when you click Install or Update. Nothing is checked or updated by itself. |
 | **A plugin you allowed to reach the internet** | Only the hosts it names, which you allowed when you installed it | Whatever the plugin puts in its request, which may include anything it may read: notes you allowed it, never private ones, even when AI has full access. That host's own terms apply. Plugins are made by other people, and the developer does not receive any of this. | When the plugin asks. A plugin without that permission may still be able to send what it can read, so install only plugins you trust. |
 | **Optional tools** (FFmpeg, whisper.cpp and its model) | winget (Windows) or Homebrew (macOS, Linux) when it is on the computer, else their makers' download sites (GitHub, Hugging Face) | A download request | Only when you click to install one |
-| **The donation goal** (Settings › About) | olexify.dev (the developer's site, hosted by Cloudflare) | Your IP address, to read the current donation goal | When you open the About card in Settings, at most every 6 hours; never in the Microsoft Store package. The Support window sends nothing. |
+| **The donation goal** (Settings › About) | olexify.dev (the developer's site, hosted by Cloudflare) | Your IP address, to read the current donation goal | When you open the About card in Settings, at most every 6 hours; never in the Microsoft Store package or the Google Play app. The Support window sends nothing. |
 
 ### Your keys and sign-ins
 
@@ -141,7 +141,7 @@ QR code are part of the app, so showing or copying one sends nothing. Please do 
 sanctions or live in a sanctioned region. A donation buys nothing in Leonote.
 
 The Microsoft Store package offers none of these. Its one button, "Support Leonote", opens olexify.dev in your
-browser, and any donation is made there.
+browser, and any donation is made there. The Google Play app has no donation buttons, links or addresses at all.
 
 If you donate (Patreon, Monobank) or, later, pay for an optional extra, the platform or payment provider handles
 the payment under its own policy. Leonote receives what it needs to deliver, support, refund and keep tax records -

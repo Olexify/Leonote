@@ -468,8 +468,17 @@ pub(crate) mod win {
         })
     }
     pub fn fetch(dev: String, id: String, size: u64, to: PathBuf) -> Result<u64, String> {
+        fetch_if(dev, id, size, to, || true)
+    }
+    /// `fetch`, but only if `still()` says it is wanted when its turn on the phone comes: a preview of a video the
+    /// user has already moved past is not copied (a whole video, often hundreds of MB, ahead of a delete or a copy).
+    pub fn fetch_if(dev: String, id: String, size: u64, to: PathBuf, still: impl FnOnce() -> bool + Send + 'static) -> Result<u64, String> {
         let d2 = dev.clone();
-        on(2, Some(dev), move |devs| unsafe { let d = devs.get(&d2)?; fetch_on(&d, &id, size, &to) })
+        on(2, Some(dev), move |devs| unsafe {
+            if !still() { return Ok(0); } // not an error: an error would make the worker close the phone
+            let d = devs.get(&d2)?;
+            fetch_on(&d, &id, size, &to)
+        })
     }
 
     /// A file from this computer onto the phone, into the folder `parent`, named `name`. Returns the new object's id.
@@ -990,7 +999,12 @@ pub fn serve(scheme: &str, uri: &str) -> (u16, &'static str, Vec<u8>) {
                 // asked for quickly (the tile of a phone without its own thumbnails): no whole video for it
                 if q.get("quick").is_some() { let _ = std::fs::remove_dir_all(&tmp); return fail("no quick frame".into()); }
             }
-            let r = win::fetch(d, o, size, src.clone()).and_then(|_| {
+            // only the newest preview asked for is worth a whole video: arrowing through ten videos queued ten copies
+            // the phone had to finish before a delete or a move could start (a frame for a tile is not affected)
+            let want = (!vthumb).then(|| { let n = PREVIEW_WANT.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1; n });
+            let still = move || want.map_or(true, |n| PREVIEW_WANT.load(std::sync::atomic::Ordering::SeqCst) == n);
+            let r = win::fetch_if(d, o, size, src.clone(), still).and_then(|got| {
+                if got == 0 && size > 0 { return Err("a newer preview was asked for".to_string()); }
                 let out = tmp.join(if vthumb { "t.jpg" } else { "p.mp4" });
                 let mut cmd = std::process::Command::new(&ff);
                 if vthumb {
@@ -1015,7 +1029,9 @@ pub fn serve(scheme: &str, uri: &str) -> (u16, &'static str, Vec<u8>) {
             let heic = nm.ends_with(".heic") || nm.ends_with(".heif");
             let video = [".mp4", ".mov", ".3gp", ".mkv", ".webm", ".m4v"].iter().any(|e| nm.ends_with(e));
             // a video without the phone's own thumbnail is not read whole just for one: the page asks for a made frame if it wants one
-            let r = if path.ends_with("/thumb") { win::thumb(d.clone(), o.clone()).or_else(|e| if video { Err(e) } else { win::file(d, o, 40 << 20).and_then(|b| win::to_jpeg(Some(&b), None, side.max(320))) }) } else { win::file(d, o, 400 << 20) };
+            if path.ends_with("/thumb") { if let Some(b) = thumb_cache(&format!("{d}|{o}"), None) { return ok(b.clone(), sniff(&b)); } }
+            let tkey = format!("{d}|{o}");
+            let r = if path.ends_with("/thumb") { win::thumb(d.clone(), o.clone()).map(|b| { thumb_cache(&tkey, Some(b.clone())); b }).or_else(|e| if video { Err(e) } else { win::file(d, o, 40 << 20).and_then(|b| win::to_jpeg(Some(&b), None, side.max(320))) }) } else { win::file(d, o, 400 << 20) };
             return match r {
                 Ok(b) if heic && !path.ends_with("/thumb") => match win::to_jpeg(Some(&b), None, side) { Ok(j) => ok(j, "image/jpeg"), Err(e) => fail(e) },
                 Ok(b) => { let t = sniff(&b); ok(b, t) }
@@ -1028,6 +1044,24 @@ pub fn serve(scheme: &str, uri: &str) -> (u16, &'static str, Vec<u8>) {
 }
 
 static NEXT_TMP: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+/// The number of the newest video preview asked for (see `fetch_if`).
+static PREVIEW_WANT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+/// The phone's own thumbnails this session (at most 120 MB - tens of thousands of tiles), so a grid drawn again
+/// after a delete, a sort or a scroll back shows them at once instead of asking the phone for each one again.
+/// Keyed by phone and object id; a deleted file's id is not reused by the phone while it stays plugged in.
+fn thumb_cache(key: &str, put: Option<Vec<u8>>) -> Option<Vec<u8>> {
+    type Cache = (std::collections::HashMap<String, Vec<u8>>, std::collections::VecDeque<String>, usize);
+    static C: std::sync::OnceLock<std::sync::Mutex<Cache>> = std::sync::OnceLock::new();
+    let mut g = crate::lock(C.get_or_init(Default::default));
+    let (map, order, bytes) = &mut *g;
+    if let Some(b) = put {
+        if let Some(old) = map.insert(key.to_string(), b) { *bytes -= old.len(); } else { order.push_back(key.to_string()); }
+        *bytes += map[key].len();
+        while *bytes > 120 << 20 { let Some(k) = order.pop_front() else { break }; if let Some(b) = map.remove(&k) { *bytes -= b.len(); } }
+        return None;
+    }
+    map.get(key).cloned()
+}
 /// Previews and frames made this session, kept in memory (at most 60 MB), so a video watched again is not fetched again.
 fn made_cache(key: &str, put: Option<Vec<u8>>) -> Option<Vec<u8>> {
     static C: std::sync::Mutex<Vec<(String, Vec<u8>)>> = std::sync::Mutex::new(Vec::new());

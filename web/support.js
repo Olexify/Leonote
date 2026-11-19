@@ -19,9 +19,15 @@ export const LINKS = [
   { id: "github", name: "GitHub", url: "https://github.com/Olexify", icon: "code", note: "Other projects" },
 ];
 
+/** Google Play's build: no donations at all - no link, button, goal or ask (Google Play's payments policy). */
+const noDonations = (app) => app.store === "Google Play";
+/** The links this copy may show: a store's build leaves Patreon out; Google Play's names the website for what it is. */
+const linksFor = (app) => LINKS.filter((l) => !(app.packaged && l.id === "patreon"))
+  .map((l) => (noDonations(app) && l.id === "site" ? { ...l, note: "Website" } : l));
+
 /** Commands for the palette: one per link. */
 export function supportCommands(app) {
-  return LINKS.filter((l) => !(app.packaged && l.id === "patreon")).map((l) => ({ id: "open-" + l.id, name: `Open ${l.name}`, icon: l.icon, run: () => app.openUrl(l.url) }));
+  return linksFor(app).map((l) => ({ id: "open-" + l.id, name: `Open ${l.name}`, icon: l.icon, run: () => app.openUrl(l.url) }));
 }
 
 /** Settings > About: version, licence line and the links. */
@@ -56,11 +62,11 @@ export function aboutSection(app) {
       h("button", { class: "btn", title: "What Leonote sends where, and when", onclick: () => openText("Privacy policy", "privacy.txt", "Read it at leonote.app/privacy.") }, icon("eye"), "Privacy policy"),
       h("button", { class: "btn", title: "The terms you use Leonote under", onclick: () => openText("Licence", "licence.txt", "Read it at leonote.app/terms.") }, icon("fileText"), "Licence"),
       h("button", { class: "btn", title: "Every open-source library, font and sound in Leonote, with its licence", onclick: () => openLicenses() }, icon("fileText"), "Open-source licences"),
-      app.packaged ? null : h("button", { class: "btn", title: "Asks leonote.app which version is the latest. A newer one can then be installed with a click (the installed copies) or opened in your browser - nothing is downloaded by itself", onclick: () => app.checkUpdate() }, icon("download"), "Check for updates"),
-      app.packaged ? null : h("label", { class: "btn", title: "Once a week, when Leonote starts: is there a newer version? Off until you turn it on." },
-        h("input", { type: "checkbox", checked: app.settings.updateWeekly === true, onchange: (e) => app.setSetting("updateWeekly", e.target.checked) }), "Check weekly"),
+      app.packaged ? null : h("button", { class: "btn", title: "Asks leonote.app which version is the latest now. Leonote also asks by itself a minute after it starts and once a day, and tells you of every newer version", onclick: () => app.checkUpdate() }, icon("download"), "Check for updates"),
+      app.packaged ? null : h("label", { class: "btn", title: "On: a newer version is downloaded by itself (its signature checked) and installed when you quit Leonote. Off: you are still told of every newer version, and install it with a click. The portable copy and the .deb are always only told." },
+        h("input", { type: "checkbox", checked: app.settings.updateAuto !== false, onchange: (e) => app.setSetting("updateAuto", e.target.checked) }), "Update automatically"),
       h("button", { class: "btn", title: "Version, Windows, sizes and the last errors - for a bug report. Nothing is sent anywhere; it goes to the clipboard.", onclick: () => diagnostics(app).then((t) => navigator.clipboard.writeText(t)).then(() => app.toast("Copied - paste it into your report", { ms: 2500 })) }, icon("clipboard"), "Copy diagnostics")),
-    h("div", { class: "about-links" }, LINKS.filter((l) => l.id !== "patreon").map((l) =>
+    h("div", { class: "about-links" }, linksFor(app).filter((l) => l.id !== "patreon").map((l) =>
       h("button", { class: "about-link", title: l.url, onclick: () => app.openUrl(l.url) },
         icon(l.icon), h("span", { class: "about-link-name", text: l.name }), h("span", { class: "about-link-note", text: l.note })))),
     goal,
@@ -94,7 +100,7 @@ export async function diagnostics(app) {
   const S = app.settings;
   const nonDefault = app.defaultSettings ? Object.keys(S).filter((k) => JSON.stringify(S[k]) !== JSON.stringify(app.defaultSettings[k])) : [];
   return [
-    `Leonote ${v[0] || "dev"}${app.packaged ? " (Microsoft Store)" : ""} · Tauri ${v[1] || "-"}`,
+    `Leonote ${v[0] || "dev"}${app.packaged ? ` (${app.store || "Microsoft Store"})` : ""} · Tauri ${v[1] || "-"}`,
     `${navigator.userAgent}`,
     `${navigator.language} · ${Intl.DateTimeFormat().resolvedOptions().timeZone} · ${screen.width}×${screen.height} @${devicePixelRatio} · window ${innerWidth}×${innerHeight}`,
     `Vault ${S.vault || "~/LeoNote"} · ${app.vault.notes.size} notes · ${app.vault.files.size} files · ${app.tasks.all.length} tasks · booted in ${app.bootMs.toFixed(0)} ms`,
@@ -181,6 +187,7 @@ export const DONATE_METHODS = [
 /** Patreon, the one donate button and the arrow to see every way. Everything unfolds in place.
     While folded the names cycle (CSS only, no timer, off with less motion), and a click takes the name shown. */
 export function donateRow(app, onPatreon) {
+  if (noDonations(app)) return null;
   // the Store package: one way out to the website, nothing else (Microsoft Store Policy 10.8.2 limits how voluntary donations may be received)
   if (app.packaged) {
     const { url } = LINKS.find((l) => l.id === "site");
@@ -251,6 +258,7 @@ export function donateRow(app, onPatreon) {
 }
 
 export function maybeAskSupport(app) {
+  if (noDonations(app)) return;
   const now = Date.now(), d = { ...(app.settings.donate || {}) };
   if (!d.first) { app.setSetting("donate", { first: now, next: now + 3 * DAY, n: 0 }); return; }
   if (now < d.next || document.querySelector(".dlg-back")) return;

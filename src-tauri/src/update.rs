@@ -1,10 +1,13 @@
-//! "Is there a newer Leonote?" - for the copies that do not update themselves (the Store's does). One small file on
+//! "Is there a newer Leonote?" - for the copies that do not update themselves (the stores' do). One small file on
 //! leonote.app says the latest version: { "version": "1.2.0", "url": "https://leonote.app/download",
-//! "notes": "...", "security": true }. Asked on a click, or weekly when the user turns that on - never otherwise.
-//! The installed copies (Windows installer, AppImage) can then install it on a click: `update_fetch` downloads it
-//! from the GitHub release and checks its signature against the key in tauri.conf.json, the app saves everything
-//! as on a quit, and `update_apply` installs it and starts the new version. The portable exe and the .deb are only
-//! told, with the download page.
+//! "notes": "...", "security": true, "level": "critical" }. `level` says how loudly users are told: "normal" (a short
+//! message), "important" (a yellow one that stays until closed; "security": true counts as at least this) or
+//! "critical" (a red window that waits for an answer). Asked about a minute after start and then once a day (the owner's choice,
+//! 20 Nov 2026: users are told of every update), or on a click.
+//! The installed copies (Windows installer, AppImage) can install it: `update_fetch` downloads it from the GitHub
+//! release and checks its signature against the key in tauri.conf.json - by itself when "Update automatically" is on
+//! (the default), else on a click. `update_apply` installs it and starts the new version; `update_install_quit`
+//! installs it as Leonote quits. The portable exe and the .deb are only told, with the download page.
 
 use serde_json::{json, Value};
 #[cfg(desktop)]
@@ -53,6 +56,22 @@ pub fn update_apply(app: tauri::AppHandle) -> Result<(), String> {
     }
 }
 
+/// Installs what `update_fetch` got and quits (an update waiting when the user quits goes in then, as Firefox does).
+/// The page has saved everything already. Nothing downloaded: just quits.
+#[tauri::command]
+pub fn update_install_quit(app: tauri::AppHandle) -> Result<(), String> {
+    #[cfg(desktop)]
+    {
+        let ready = READY.lock().map_err(|e| e.to_string())?.take();
+        if let Some((up, bytes)) = ready {
+            // an install that fails leaves the old version as it was; the quit goes on either way
+            if let Err(e) = up.install(bytes) { eprintln!("update on quit: {e}"); }
+        }
+    }
+    app.exit(0);
+    Ok(())
+}
+
 /// The page a newer version may send the user to: Leonote's own sites only (a changed file cannot point at
 /// a download somewhere else).
 pub fn trusted_page(url: &str) -> bool {
@@ -78,13 +97,32 @@ pub async fn update_check(app: tauri::AppHandle) -> Result<Value, String> {
         let latest = v["version"].as_str().and_then(clean_version).ok_or("leonote.app gave no version")?;
         let url = v["url"].as_str().filter(|u| trusted_page(u)).unwrap_or("https://leonote.app").to_string();
         let notes: String = v["notes"].as_str().unwrap_or("").chars().take(300).collect();
-        Ok(json!({ "current": current, "latest": latest, "newer": crate::webext::newer(&latest, &current), "url": url, "notes": notes, "security": v["security"] == true, "installable": installable() }))
+        Ok(json!({ "current": current, "latest": latest, "newer": crate::webext::newer(&latest, &current), "url": url, "notes": notes, "security": v["security"] == true, "level": level_of(&v), "installable": installable() }))
     }).await.map_err(|e| e.to_string())?
+}
+
+/// How loudly an update is told: "critical", "important" (also any security fix) or "normal" - nothing else gets through.
+fn level_of(v: &Value) -> &'static str {
+    match v["level"].as_str() {
+        Some("critical") => "critical",
+        Some("important") => "important",
+        _ if v["security"] == true => "important",
+        _ => "normal",
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn update_levels() {
+        assert_eq!(level_of(&json!({ "level": "critical" })), "critical");
+        assert_eq!(level_of(&json!({ "level": "important" })), "important");
+        assert_eq!(level_of(&json!({ "security": true })), "important");
+        assert_eq!(level_of(&json!({ "security": true, "level": "critical" })), "critical");
+        assert_eq!(level_of(&json!({ "level": "<b>shout</b>" })), "normal");
+        assert_eq!(level_of(&json!({})), "normal");
+    }
     #[test]
     fn only_leonotes_own_pages_and_plain_versions() {
         assert!(trusted_page("https://leonote.app/download"));

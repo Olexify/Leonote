@@ -5292,3 +5292,10 @@ html.is-phone kbd:not(.cm-content kbd), html.is-phone .pal-hint, html.is-phone .
 /* the assistant's first words start at the top instead of being cut by what is below */
 .is-phone .empty-state.ai-empty { margin: 0 auto; padding: 16px 8px; flex: none; }
 .is-phone .cal-when { display: none; } /* the month is named beside it; no room for both */
+
+/* updates told loudly: an important one in yellow (stays until closed), a critical one in a red window */
+.toast.is-update { background: color-mix(in srgb, #e0a84a 22%, var(--toast-bg)); box-shadow: inset 3px 0 0 #e0a84a, 0 16px 40px -10px rgba(0, 0, 0, 0.55), 0 0 0 1px color-mix(in srgb, #e0a84a 40%, transparent); }
+.toast.is-update .toast-btn { color: #f5c46b; }
+.dlg.upd-critical { border: 1px solid color-mix(in srgb, var(--danger) 55%, transparent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 18%, transparent), 0 24px 60px -12px rgba(0, 0, 0, 0.6); }
+.dlg.upd-critical .dlg-title { color: var(--danger); display: flex; align-items: center; gap: 8px; }
+.ph-drawer { flex-wrap: wrap; justify-content: center; } /* more tabs than room (a narrow window): a second row, never a tab cut off */

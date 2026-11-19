@@ -556,6 +556,7 @@ async fn boot(app: AppHandle, state: State<'_, AppState>) -> Result<Boot, String
         // handed over once - a reload must not reopen them
         open_paths: external::take_argv_files(),
         packaged: app_packaged(),
+        store: if cfg!(feature = "play") { "Google Play" } else if app_packaged() { "Microsoft Store" } else { "" },
     })
 }
 
@@ -592,6 +593,8 @@ struct Boot {
     hidden: bool,
     open_paths: Vec<String>,
     packaged: bool,
+    /// The store this copy comes from ("Microsoft Store", "Google Play"), or "" for a download from leonote.app
+    store: &'static str,
 }
 
 /// The only task mutation: sparse ops, appended to this app's own log.
@@ -1843,7 +1846,7 @@ const RESTARTED_ENV: &str = "LEONOTE_RESTARTED";
 /// and a few choices are shown differently. An exe built for the Store is the
 /// Store build wherever it runs, so it never asks for what it left out.
 fn app_packaged() -> bool {
-    if cfg!(feature = "store") { return true; }
+    if cfg!(feature = "store") || cfg!(feature = "play") { return true; }
     #[cfg(windows)]
     unsafe {
         use windows::Win32::Storage::Packaging::Appx::GetCurrentPackageFullName;
@@ -2270,7 +2273,7 @@ pub fn run() {
             external::unindexed_find, external::unindexed_names, external::no_index_set,
             grant::pick_open, grant::pick_save, grant::pick_save_done,
             script::script_open, script::script_start, script::script_path,
-            claude_import::claude_import, update::update_check, update::update_fetch, update::update_apply,
+            claude_import::claude_import, update::update_check, update::update_fetch, update::update_apply, update::update_install_quit,
             drive::drive_status, drive::drive_connect, drive::drive_disconnect, drive::drive_sync,
             viewer::viewer_open, viewer::viewer_start, viewer::viewer_siblings, viewer::viewer_trash,
             oauth::oauth_listen,

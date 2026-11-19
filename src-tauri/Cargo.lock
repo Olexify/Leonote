@@ -2714,7 +2714,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "leonote-rs"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "age",
  "base64 0.23.1",

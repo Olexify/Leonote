@@ -317,6 +317,7 @@ export const host = {
   updateCheck: () => call("update_check"),
   updateFetch: () => call("update_fetch"),
   updateApply: () => call("update_apply"),
+  updateInstallQuit: () => call("update_install_quit"),
   driveStatus: () => call("drive_status"),
   driveConnect: () => call("drive_connect"),
   driveDisconnect: () => call("drive_disconnect"),

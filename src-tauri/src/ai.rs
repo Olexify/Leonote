@@ -65,7 +65,7 @@ pub(crate) fn unseal(sealed: &[u8]) -> Result<Vec<u8>, String> {
 }
 
 // A phone: kept as they are in the app's own storage, which Android closes to every other app (the owner's choice,
-// 19 November 2026). They never leave it: not in a backup, not in the vault, not in a sync. The hardware keystore later.
+// 19 November 2026). Leonote puts them in no backup, vault or sync of its own, and the build turns Android's app backup off (android.yml). The hardware keystore later.
 #[cfg(target_os = "android")]
 pub(crate) fn seal(plain: &[u8]) -> Result<Vec<u8>, String> { Ok(plain.to_vec()) }
 #[cfg(target_os = "android")]

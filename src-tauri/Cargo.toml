@@ -1,6 +1,6 @@
 [package]
 name = "leonote-rs"
-version = "1.0.3"
+version = "1.0.4"
 description = "Leonote - instant local-first notes and tasks"
 authors = ["Olexify.dev"]
 license-file = "../LICENSE"
@@ -16,9 +16,10 @@ edition = "2021"
 name = "leonote_rs_lib"
 crate-type = ["rlib"] # no mobile build: the static and dynamic libraries only filled the disk
 
-# "store" marks the Microsoft Store package (scripts/build-store.ps1).
+# "store" marks the Microsoft Store package (scripts/build-store.ps1); "play" the Google Play app (android.yml, play: true).
 [features]
 store = []
+play = []
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
