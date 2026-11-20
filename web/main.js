@@ -3935,6 +3935,26 @@ async function start() {
   };
   let readyVersion = ""; // downloaded and checked, installed at the next quit
   const ANDROID_APK = "https://github.com/Olexify/Leonote/releases/latest/download/Leonote-android.apk";
+  // the Android app from GitHub updates itself like the desktop installer: fetched quietly, put in when Leonote is
+  // left in the background (Android closes the app for it), or at once with Install now. Google Play's copy: Play does it.
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  let readyApk = "", readyApkVersion = "";
+  const installApk = async (ask) => {
+    if (!readyApk) return;
+    try { await app.flushAll(); } catch {}
+    try {
+      const r = await host.apkInstall(readyApk, ask);
+      if (r && r.needs === "permission") {
+        if (ask) toast("Let Leonote install updates on the page Android opened, then come back and press Install now.", { ms: 12000 });
+        else toast(`Leonote ${readyApkVersion} is downloaded. Android needs your yes once to let Leonote update itself.`, { ms: 864e5, kind: "update", actions: [{ label: "Allow", run: () => installApk(true) }] });
+      }
+    } catch (e) { toast("Could not install the update: " + e, { kind: "error", ms: 8000 }); }
+  };
+  if (isAndroid) document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "hidden" || !readyApk || app.settings.updateAuto === false) return;
+    // only when the user has really left (not a glance at a notification), and never asking while out of sight
+    setTimeout(() => { if (document.visibilityState === "hidden") installApk(false); }, 20000);
+  });
   /** Telling the user, as loudly as the update file says: normal - a short message; important (and any security fix) -
    *  a yellow one that stays until closed; critical - a red window that waits for an answer. Every one offers to update now. */
   const notifyUpdate = (r, ready) => {
@@ -3942,11 +3962,12 @@ async function start() {
     // an Android phone (the APK from GitHub; Google Play's copy is updated by Play): the new APK straight away - the phone's
     // browser downloads it, a tap on it brings Android's own "Update this app?", which an APK always needs
     const android = /Android/i.test(navigator.userAgent);
-    const now = ready ? { label: "Restart now", run: restart } : r.installable ? { label: "Install", run: installUpdate }
+    const now = ready && isAndroid ? { label: "Install now", run: () => installApk(true) }
+      : ready ? { label: "Restart now", run: restart } : r.installable ? { label: "Install", run: installUpdate }
       : android ? { label: "Install", run: () => { app.openUrl(ANDROID_APK); toast("Downloading the new version - tap it when it is done, then Update. Your notes stay.", { ms: 9000 }); } }
       : { label: "Download page", run: () => app.openUrl(r.url) };
     const what = r.level === "critical" ? "a critical update" : r.security ? "security fixes" : "";
-    const line = `Leonote ${r.latest} ${ready ? "is ready" : "is out"}${what ? ` - ${what}` : ""}. ${ready ? "It installs when you quit Leonote." : `You have ${r.current}.`}`;
+    const line = `Leonote ${r.latest} ${ready ? "is ready" : "is out"}${what ? ` - ${what}` : ""}. ${ready ? (isAndroid ? "It goes in when you leave Leonote for a while." : "It installs when you quit Leonote.") : `You have ${r.current}.`}`;
     if (r.level === "critical") {
       const close = () => back.remove();
       const back = h("div", { class: "dlg-back is-in" },
@@ -3974,7 +3995,11 @@ async function start() {
         await host.updateFetch();
         readyVersion = r.latest;
       }
-      notifyUpdate(r, readyVersion === r.latest);
+      // the Android app from GitHub: the new APK fetched quietly too; an older build without it says no, and the button stays
+      if (isAndroid && !app.packaged && app.settings.updateAuto !== false && readyApkVersion !== r.latest) {
+        try { readyApk = await host.apkFetch(r.latest); readyApkVersion = r.latest; } catch { readyApk = ""; }
+      }
+      notifyUpdate(r, readyVersion === r.latest || (!!readyApk && readyApkVersion === r.latest));
     } catch (e) { if (!quiet) toast(String(e), { kind: "error" }); }
   };
   /** "Read as script": the note in the script window - large type, scrolling by itself, kept out of recordings. */
