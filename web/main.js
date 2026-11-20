@@ -3934,11 +3934,17 @@ async function start() {
     } catch (e) { updating = false; closing = false; toast(String(e), { kind: "error", ms: 8000 }); }
   };
   let readyVersion = ""; // downloaded and checked, installed at the next quit
+  const ANDROID_APK = "https://github.com/Olexify/Leonote/releases/latest/download/Leonote-android.apk";
   /** Telling the user, as loudly as the update file says: normal - a short message; important (and any security fix) -
    *  a yellow one that stays until closed; critical - a red window that waits for an answer. Every one offers to update now. */
   const notifyUpdate = (r, ready) => {
     const restart = () => { updating = true; shutdown(() => host.updateApply()); };
-    const now = ready ? { label: "Restart now", run: restart } : r.installable ? { label: "Install", run: installUpdate } : { label: "Download page", run: () => app.openUrl(r.url) };
+    // an Android phone (the APK from GitHub; Google Play's copy is updated by Play): the new APK straight away - the phone's
+    // browser downloads it, a tap on it brings Android's own "Update this app?", which an APK always needs
+    const android = /Android/i.test(navigator.userAgent);
+    const now = ready ? { label: "Restart now", run: restart } : r.installable ? { label: "Install", run: installUpdate }
+      : android ? { label: "Install", run: () => { app.openUrl(ANDROID_APK); toast("Downloading the new version - tap it when it is done, then Update. Your notes stay.", { ms: 9000 }); } }
+      : { label: "Download page", run: () => app.openUrl(r.url) };
     const what = r.level === "critical" ? "a critical update" : r.security ? "security fixes" : "";
     const line = `Leonote ${r.latest} ${ready ? "is ready" : "is out"}${what ? ` - ${what}` : ""}. ${ready ? "It installs when you quit Leonote." : `You have ${r.current}.`}`;
     if (r.level === "critical") {
