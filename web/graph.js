@@ -970,7 +970,7 @@ export function mountGraph(app, el, opts = {}) {
       h("div", { class: "gx-hc-title" }, icon("home"), h("span", { text: homeName(k) })),
       h("div", { class: "gx-hc-row", text: `${plural(ids.length, "note")}${last ? ` · changed ${ago(last)}` : ""}` }),
       h("div", { class: "gx-hc-row", text: open ? plural(open, "open task") : "No open tasks" }),
-      core ? h("button", { class: "gx-hc-core", title: "Open the note it centres on", onclick: () => app.openNote(core.id) }, icon("target"), h("span", { text: core.label })) : null,
+      core ? h("button", { class: "gx-hc-core", title: "Open the note it centres on", onclick: () => app.openNote(core.id) }, icon("target"), h("span", { text: core.label })) : "",
       h("div", { class: "gx-btnrow" },
         h("button", { class: "gx-chip", onclick: () => { flyToHome(k); homeCard.hidden = true; } }, icon("expand"), "Fly there"),
         h("button", { class: "gx-chip", onclick: () => { selectHome(k); homeCard.hidden = true; } }, icon("check"), "Select its notes")));
@@ -4813,12 +4813,12 @@ export function mountGraph(app, el, opts = {}) {
         b.append(
           h("div", { class: "gx-seglabel", text: "Look" }),
           segmented([["plain", "Plain"], ["pirates", "Pirates", "ship"], ["space", "Space", "rocket"]], S.look, (v) => { set("look", v); ships.length = 0; kick(); renderPanel(); }),
-          S.look !== "plain" ? toggleRow(S.look === "space" ? "Spaceships" : "Ships", "ships", () => { ships.length = 0; kick(); renderPanel(); }) : null,
-          S.look !== "plain" && S.ships ? sliderRow("How many", "shipCount", 0, 100, 1, (v) => String(v), () => kick(), 1000) : null,
-          S.look !== "plain" && S.ships ? toggleRow("Size by zoom", "shipZoom", () => kick()) : null,
+          S.look !== "plain" ? toggleRow(S.look === "space" ? "Spaceships" : "Ships", "ships", () => { ships.length = 0; kick(); renderPanel(); }) : "",
+          S.look !== "plain" && S.ships ? sliderRow("How many", "shipCount", 0, 100, 1, (v) => String(v), () => kick(), 1000) : "",
+          S.look !== "plain" && S.ships ? toggleRow("Size by zoom", "shipZoom", () => kick()) : "",
           toggleRow("Double-click opens beside", "dblSide", () => {}, "columns"),
           toggleRow("Fog of war", "fog", () => { fogAt = 0; kick(); renderPanel(); }, "cloud"),
-          S.fog ? sliderRow("Fog after", "fogDays", 7, 365, 1, (v) => `${v} days`, () => { fogAt = 0; kick(); }) : null,
+          S.fog ? sliderRow("Fog after", "fogDays", 7, 365, 1, (v) => `${v} days`, () => { fogAt = 0; kick(); }) : "",
         );
       }),
       section("displayNodes", "Nodes and labels", (b) => {
@@ -4843,12 +4843,12 @@ export function mountGraph(app, el, opts = {}) {
             renderPanel();
           }),
           toggleRow("Highlight bridges", "crossLinks", () => { kick(); renderPanel(); }, "link"),
-          S.crossLinks ? segmented([["line", "Line"], ["dashed", "Dash"], ["gradient", "Colour"], ["glow", "Glow"]], S.linkStyle, (v) => { set("linkStyle", v); kick(); renderPanel(); }) : null,
-          S.crossLinks ? segmented([["curve", "Curved"], ["straight", "Straight"]], S.bridgeCurve ? "curve" : "straight", (v) => { set("bridgeCurve", v === "curve"); kick(); renderPanel(); }) : null,
+          S.crossLinks ? segmented([["line", "Line"], ["dashed", "Dash"], ["gradient", "Colour"], ["glow", "Glow"]], S.linkStyle, (v) => { set("linkStyle", v); kick(); renderPanel(); }) : "",
+          S.crossLinks ? segmented([["curve", "Curved"], ["straight", "Straight"]], S.bridgeCurve ? "curve" : "straight", (v) => { set("bridgeCurve", v === "curve"); kick(); renderPanel(); }) : "",
           toggleRow("Trade routes between homes", "routes", () => kick(), "link"),
           toggleRow("Hide links inside", "hideInner", () => kick()),
           toggleRow("Only show bridges", "bridgesOnly", () => { vis2(); kick(); }),
-          !bridgeN ? h("div", { class: "gx-hint", text: S.crossBy === "homes" ? (homes.size ? "No links between homes and the pool." : "No homes yet. Drag a cluster out of the pool to give it one.") : "No links between colour groups." }) : null,
+          !bridgeN ? h("div", { class: "gx-hint", text: S.crossBy === "homes" ? (homes.size ? "No links between homes and the pool." : "No homes yet. Drag a cluster out of the pool to give it one.") : "No links between colour groups." }) : "",
         );
       }, bridgeN ? plural(bridgeN, "bridge") : ""),
       section("forces", "Forces", (b) => {
@@ -5150,7 +5150,7 @@ export function mountGraph(app, el, opts = {}) {
       btn("fileText", "Open", () => openInTabs(), notesN > MAX_TABS ? `Open in tabs (first ${MAX_TABS})` : "Open in tabs"),
       btn("panelRight", "Side by side", () => openSideBySide(), app.openSplit ? "Open in the split view, next to the graph" : "Open to the side"),
       btn("square", "Comment", () => commentAround(), "Frame the selection in a comment (C)"),
-      homesOn() ? btn("home", "Home", () => makeHome(selIdx.slice()), "Give the selection a home where it is") : null,
+      homesOn() ? btn("home", "Home", () => makeHome(selIdx.slice()), "Give the selection a home where it is") : "",
       btn("expand", "Expand", expandSelection, "Add their neighbours (E)"),
       btn("focus", "Focus", focusSelection, "Show only the selection"),
       h("span", { class: "gx-sel-sep" }),

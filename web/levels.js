@@ -169,7 +169,7 @@ function body(app, year, setYear) {
     return h("button", { class: "lv-colour" + (shut ? " is-locked" : "") + (app.settings.accent === k ? " is-on" : ""), style: { "--c": ACCENTS[k] }, disabled: shut,
       title: shut ? `Unlocked at ${rk} (level ${lv})` : `${k} - wear it`, onclick: () => { app.setSetting("accent", k); paintColours(); } },
       h("i"), h("small", { text: shut ? `${rk}` : k }));
-  }), Object.entries(ACCENT_UNLOCKS).some((e) => !near(e)) ? h("button", { class: "swatch-more", onclick: () => { coloursAll = !coloursAll; paintColours(); } }, coloursAll ? "Fewer" : `+${Object.entries(ACCENT_UNLOCKS).filter((e) => !near(e)).length} more`) : null);
+  }), Object.entries(ACCENT_UNLOCKS).some((e) => !near(e)) ? h("button", { class: "swatch-more", onclick: () => { coloursAll = !coloursAll; paintColours(); } }, coloursAll ? "Fewer" : `+${Object.entries(ACCENT_UNLOCKS).filter((e) => !near(e)).length} more`) : "");
   const colours = h("div", { class: "lv-colours" });
   paintColours();
 

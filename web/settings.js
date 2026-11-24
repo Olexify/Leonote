@@ -124,6 +124,7 @@ export const DEFAULTS = {
   splitSide: "right",
   ribbonGap: "small",
   highlightStyle: "marker",
+  taskPrio: "plain", // the line beside a task with a priority: plain (none, the wash only), glow, fade, edge, corner, underline, thick
   // "auto" means nobody has chosen: boot turns it into full or reduced
   // depending on the system's prefers-reduced-motion. See util.js resolveMotion.
   motion: "auto",
@@ -333,7 +334,7 @@ export function mountSettings(app, el) {
     ["Notes and files", ["Files", "Where new things go", "Daily notes", "Images", "Media folders", "Trash", "Zettelkasten"]],
     ["Browser and Player", ["Browser", "Passwords", "Browser add-ons", "Player"]],
     ["Life", ["Calendar", "Workout"]],
-    ["AI", ["Jev", "Assistant", "Speech recognition", "AI agents"]],
+    ["AI", ["Jev", "Assistant", "Speech recognition", "AI agents", "Claude Code"]],
     ["Data", ["Backup and moving to another computer", "Outposts", "Search on this PC"]],
     ["App", ["Start and close", "Plugins", "Optional modules", "Keyboard", "About"]],
   ];
@@ -344,7 +345,7 @@ export function mountSettings(app, el) {
     Files: "file", "Where new things go": "filePlus", "Daily notes": "calendar", Images: "image", "Media folders": "film", Trash: "trash", Zettelkasten: "graph",
     Browser: "globe", Passwords: "key", "Browser add-ons": "puzzle", Plugins: "puzzle", Player: "music",
     Calendar: "calendar", Workout: "dumbbell",
-    Jev: "bolt", Assistant: "aiBot", "Speech recognition": "mic", "AI agents": "code",
+    Jev: "bolt", Assistant: "aiBot", "Speech recognition": "mic", "AI agents": "code", "Claude Code": "sparkles",
     "Backup and moving to another computer": "archive", Outposts: "outside", "Search on this PC": "search",
     "Start and close": "rotateRight", "Optional modules": "download", Keyboard: "keyboard", About: "heart",
   };
@@ -1081,6 +1082,7 @@ export function mountSettings(app, el) {
         () => h("span", { class: "set-fold-chip", text: (HEADING_STYLES.find(([v]) => v === resolveHeadingStyle(S.headingStyle)) || [])[1] || "Plain" }),
         (repaint) => { const p = headingPicker(); p.addEventListener("click", () => setTimeout(repaint)); return p; }),
       row("Heading size", "The whole ramp at once, from H1 down to H6", seg("headingSize", [["compact", "Compact"], ["normal", "Normal"], ["large", "Large"]])),
+      row("Task priority", "The coloured line beside a task with a priority", seg("taskPrio", [["plain", "No line"], ["glow", "Glow"], ["fade", "Fade"], ["edge", "Edge"], ["corner", "Corner"], ["underline", "Underline"], ["thick", "Thick"]])),
       row("Text size", "Ctrl + and Ctrl − also work", slider("fontSize", 13, 22, "px")),
       row("Window zoom", "The whole app, larger or smaller. Ctrl+scroll anywhere does the same; this follows it.", (() => {
         const key = () => (S.compact ? "uiScaleCompact" : "uiScale");

@@ -361,8 +361,9 @@ export function mountOutposts(app, { section, act }) {
     }
     if (!list.length) {
       frag.append(h("div", { class: "op-empty" },
-        h("p", { text: "Hook up folders that live outside your vault - music, videos, documents - and browse them from here. They stay where they are." }),
-        h("button", { class: "link-btn", onclick: () => addOutpost(app) }, "Hook up a folder…")));
+        // short: it sits in the file tree for as long as there are none
+        h("p", { text: "Folders outside your vault, browsed here." }),
+        h("button", { class: "link-btn", title: "Music, videos, documents - any folder on this computer. It stays where it is.", onclick: () => addOutpost(app) }, "Hook up a folder…")));
     } else if (found) {
       if (!found.hits.length) frag.append(h("div", { class: "op-note", text: found.busy ? "Looking…" : "Nothing in the outposts matches" }));
       for (const hit of found.hits) {

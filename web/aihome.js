@@ -7,7 +7,7 @@
 // what Jev and agents did), Skills, Access (what agents may do with which
 // folders) and Setup (a short checklist of what is connected).
 
-import { h, basename, debounce } from "./util.js";
+import { h, basename, debounce, TOUCH } from "./util.js";
 import { icon } from "./icons.js";
 import { mountChatTabs } from "./aitabs.js";
 
@@ -147,10 +147,10 @@ export function openQuick(app) {
 
 export function mountAiHome(app, el) {
   const S = app.settings;
-  const box = quickBox(app, { placeholder: "Ask, do, find… - the chat, a skill, a task, a note, a search (Ctrl+Shift+A anywhere)", folding: true });
+  const box = quickBox(app, { placeholder: TOUCH ? "Ask, do, find…" : "Ask, do, find… - the chat, a skill, a task, a note, a search (Ctrl+Shift+A anywhere)", folding: true });
   const TABS = [["chat", "Chat"], ["activity", "Activity"], ["skills", "Skills"], ["access", "Access"], ["setup", "Setup"]];
   let tab = TABS.some(([k]) => k === S.aiHomeTab) ? S.aiHomeTab : "chat";
-  const tabsEl = h("div", { class: "segmented is-small aih-tabs" });
+  const tabsEl = h("div", { class: "segmented aih-tabs" }); // the view's own tabs: the size of the other views' tabs (Workout, Player)
   const panes = Object.fromEntries(TABS.map(([k]) => [k, h("div", { class: "aih-pane aih-" + k, hidden: true })]));
   el.replaceChildren(h("div", { class: "aih" }, h("div", { class: "aih-top" }, box.el, tabsEl), ...Object.values(panes)));
 

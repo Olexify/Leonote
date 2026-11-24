@@ -113,7 +113,7 @@ export function mountMusic(app, el) {
   const search = h("input", { class: "pv-search", type: "search", placeholder: "Search, or paste a link", spellcheck: false, "aria-label": "Search, or paste a link" });
   const sortBtn = h("button", { class: "chip-btn pv-sort", title: "Sort", onclick: (e) => sortMenu(e.currentTarget) });
   const dirBtn = h("button", { class: "chip-btn pv-sortdir", onclick: () => { desc = !desc; app.setSetting("playerSortDesc", desc); paintTabs(); renderList(); } });
-  const groupBtn = h("button", { class: "chip-btn pv-group", title: "Group by folder (albums)", onclick: () => { grouped = !grouped; app.setSetting("playerGroup", grouped); renderList(); } }, "Albums");
+  const groupBtn = h("button", { class: "chip-btn pv-groupby", title: "Group by folder (albums)", onclick: () => { grouped = !grouped; app.setSetting("playerGroup", grouped); renderList(); } }, "Albums");
   const foldBtn = h("button", { class: "chip-btn pv-foldall", onclick: () => foldAll(!allFolded()) });
   const sourceBtn = h("button", { class: "chip-btn pv-source", title: "Where the music comes from", onclick: (e) => sourceMenu(e.currentTarget) });
   const listBtn = h("button", { class: "icon-btn pv-listmore", title: "List options", onclick: (e) => listMenu(e.currentTarget) }, icon("more"));
@@ -470,7 +470,7 @@ export function mountMusic(app, el) {
     groupBtn.disabled = !GROUPABLE.has(sort);
     foldBtn.hidden = !listTab || !groupsOn();
     const shut = allFolded();
-    foldBtn.replaceChildren(icon(shut ? "chevronDown" : "chevron"), shut ? "Open all" : "Fold all");
+    foldBtn.replaceChildren(icon(shut ? "expand" : "shrink"), shut ? "Open all" : "Fold all"); // shown as its icon alone in the toolbar
     foldBtn.title = shut ? "Open every folder" : "Fold every folder";
     sortBtn.hidden = tab === "playlists" && !openList;
     sizeBtn.hidden = tab !== "youtube" || ONLINE_LIST();
@@ -2719,7 +2719,7 @@ Click to play · Bring back puts it in Online media again`, onclick: () => M.pla
     qFrom.title = q.from ? `Playing from “${q.from}”` : "";
     if (qGrow) qGrow.disconnect();
     if (!q.items.length) {
-      qList.replaceChildren(h("div", { class: "pv-q-empty", text: "The queue is empty. Double-click a song, or drag songs here." }));
+      qList.replaceChildren(h("div", { class: "pv-q-empty", text: document.documentElement.classList.contains("is-phone") ? "The queue is empty. Play a song and it starts here." : "The queue is empty. Double-click a song, or drag songs here." }));
       return;
     }
     // searching: the first 250 that match

@@ -231,7 +231,7 @@ export function mountTasks(app, el) {
         if (!(await confirmDialog("Empty the trash?", `${n} task${n === 1 ? "" : "s"} will be deleted for good. This cannot be undone.`, { ok: "Delete them", safe: true }))) return;
         const gone = store.sweepTrash(true);
         app.toast(gone ? `${gone} task${gone === 1 ? "" : "s"} deleted for good` : "Trash is already empty", { ms: 3000 });
-      } }, "Empty it now") : null);
+      } }, "Empty it now") : "");
   }
 
   /* One clock, a minute apart, only while the list is on screen and the window shows: the relative times and
@@ -949,7 +949,7 @@ export function mountTasks(app, el) {
       } }, icon("check"), anyOpen ? "Complete" : "Put back"),
       h("button", { class: "btn btn-sm", onclick: (e) => priorityMenu(ids, e.currentTarget) }, icon("flag"), "Priority"),
       h("button", { class: "btn btn-sm", onclick: (e) => dateMenu(ids, e.currentTarget) }, icon("calendar"), "Dates"),
-      app.areas && app.areas.all.length ? h("button", { class: "btn btn-sm", onclick: (e) => areaMenu(ids, e.currentTarget) }, icon("focus"), "Focus area") : null,
+      app.areas && app.areas.all.length ? h("button", { class: "btn btn-sm", onclick: (e) => areaMenu(ids, e.currentTarget) }, icon("focus"), "Focus area") : "",
       // as a checklist to paste into a note, a mail or a chat - in the order they are shown
       h("button", { class: "btn btn-sm", title: "Copy them as a Markdown checklist", onclick: () => {
         const shown = (a, b) => { const x = rows.get(a), y = rows.get(b); return x && y ? (x.compareDocumentPosition(y) & 4 ? -1 : 1) : 0; };

@@ -6,7 +6,7 @@
 // Kept in Leonote's own settings ("quitTrackers"), not in the habits file the
 // older Python app shares, so neither program can drop the other's data.
 
-import { h, uuid } from "./util.js";
+import { h, uuid, TOUCH } from "./util.js";
 import { icon } from "./icons.js";
 import { menu, toast, askDialog, confirmDialog, inlineEdit } from "./ui.js";
 import { quitStats, clock, span } from "./quitstats.js";
@@ -17,7 +17,7 @@ const localInput = (t) => { const d = new Date(t); const p = (n) => String(n).pa
 
 export function mountQuits(app, into) {
   const cards = h("div", { class: "qt-list" });
-  const add = h("input", { class: "qa-input", placeholder: "What are you quitting? (sugar, smoking, doomscrolling…)", spellcheck: false });
+  const add = h("input", { class: "qa-input", placeholder: TOUCH ? "What are you quitting?" : "What are you quitting? (sugar, smoking, doomscrolling…)", spellcheck: false });
   const sec = h("section", { class: "card qt-card-wrap" },
     h("header", { class: "card-head" }, icon("shield"), h("h2", { text: "Breaking free" }), h("span", { class: "qt-sub", text: "The clock runs on its own - every clean day counts itself" })),
     h("div", { class: "qa qt-add" }, icon("plus"), add),

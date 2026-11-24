@@ -84,7 +84,7 @@ function mountPane(app, el, hooks, id) {
   function placeWeb(force) {
     const t = cur();
     const want = !!t && t.kind === "web" && !el.hidden && !suspended && el.offsetParent !== null;
-    if (!app.host.real) { webNote.hidden = false; webNote.replaceChildren(icon("globe"), h("div", { text: "The page opens here in the Leonote app." }), t && t.kind === "web" ? h("button", { class: "btn", onclick: () => app.openUrl(t.path) }, "Open in your browser") : null); return; }
+    if (!app.host.real) { webNote.hidden = false; webNote.replaceChildren(icon("globe"), h("div", { text: "The page opens here in the Leonote app." }), t && t.kind === "web" ? h("button", { class: "btn", onclick: () => app.openUrl(t.path) }, "Open in your browser") : ""); return; }
     webNote.hidden = true;
     if (!want || covered()) { if (webUp) { webUp = false; webRect = ""; app.host.splitWebHide(id).catch(() => {}); } return; }
     const r = webSlot.getBoundingClientRect();

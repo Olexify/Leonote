@@ -153,7 +153,7 @@ export function mountDocs(app, el) {
     cats.replaceChildren(
       h("button", { class: "dx-cat" + (!shown.size ? " is-on" : ""), "aria-pressed": String(!shown.size), dataset: { cat: "*" }, onclick: () => setShown(new Set()) }, "All", h("span", { class: "dx-n", text: String(all.length) })),
       ...cs.map((c) => chip(c, c, all.filter((n) => catOf(n.path) === c).length)),
-      hasLoose ? chip("", "Unsorted", all.filter((n) => !catOf(n.path)).length) : null,
+      ...(hasLoose ? [chip("", "Unsorted", all.filter((n) => !catOf(n.path)).length)] : []), // a bare null would show as the word "null"
       h("button", { class: "dx-cat is-add", title: "A new category - a folder in " + root(), onclick: newCategory }, icon("plus"), "Category"));
     if (focusCat != null) { const b = [...cats.children].find((x) => x.dataset && x.dataset.cat === focusCat); if (b) b.focus(); }
 

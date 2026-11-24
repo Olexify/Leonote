@@ -443,7 +443,7 @@ export function mountSidebar(app, el) {
     const name = b.dataset.tip || b.title;
     if (!name || !app.settings.navRibbon) return;
     const keys = (b.dataset.keys || "").trim();
-    tipCard.replaceChildren(h("span", { class: "rb-tip-name", text: name }), keys ? kbd(keys) : null);
+    tipCard.replaceChildren(h("span", { class: "rb-tip-name", text: name }), ...(keys ? [kbd(keys)] : [])); // a null child would read "null"
     tipCard.hidden = false;
     const r = b.getBoundingClientRect();
     tipCard.style.top = Math.round(r.top + r.height / 2) + "px";

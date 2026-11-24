@@ -7,6 +7,12 @@ export const $ = (sel, root = document) => root.querySelector(sel);
  * Children may be nodes, strings, arrays or null. Built detached, so a whole
  * list is assembled off-document and attached in one go.
  */
+/* A phone has no right-click: Android opens the same menu on a long press, so every hint built here says so
+   there (the same test as the phone layout in main.js). "Ctrl+right-click" stays - it only exists with a mouse. */
+export const TOUCH = typeof navigator !== "undefined" && /Android|iPhone|iPad/i.test(navigator.userAgent || "")
+  || typeof location !== "undefined" && new URLSearchParams(location.search).has("phone");
+export const touchWords = (s) => TOUCH && s.includes("ight-click") ? s.replace(/(?<!Ctrl[+ ])(R|r)ight-click/g, (_, r) => (r === "R" ? "L" : "l") + "ong-press") : s;
+
 export function h(tag, props, ...kids) {
   const el = document.createElement(tag);
   if (props) {
@@ -14,7 +20,7 @@ export function h(tag, props, ...kids) {
       const v = props[k];
       if (v == null || v === false) continue;
       if (k === "class") el.className = v;
-      else if (k === "text") el.textContent = v;
+      else if (k === "text") el.textContent = typeof v === "string" ? touchWords(v) : v;
       else if (k === "dataset") Object.assign(el.dataset, v);
       else if (k === "style" && typeof v === "object") {
         // custom properties only take effect through setProperty
@@ -33,7 +39,7 @@ function append(el, kids) {
   for (const c of kids) {
     if (c == null || c === false) continue;
     if (Array.isArray(c)) append(el, c);
-    else el.append(c.nodeType ? c : String(c));
+    else el.append(c.nodeType ? c : touchWords(String(c)));
   }
 }
 

@@ -107,3 +107,6 @@ button.ai-step:hover { color: var(--accent); }
 /* a code block's own Copy, in its corner; shown on hover */
 .ai-code-copy { position: absolute; top: 6px; right: 6px; padding: 2px 8px; border-radius: 6px; border: 0; font-size: 11.5px; cursor: pointer; color: var(--text); background: color-mix(in srgb, var(--text) 10%, transparent); opacity: 0; transition: opacity .12s; }
 .ai-code:hover .ai-code-copy, .ai-code-copy:focus-visible { opacity: 1; }
+/* a phone: the quick prompts are one row you swipe, so the chat keeps the screen */
+.is-phone .ai-quick { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -18px; padding: 0 18px; }
+.is-phone .ai-quick > * { flex: none; }

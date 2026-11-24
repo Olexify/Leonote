@@ -235,7 +235,7 @@ export function mountLibrary(app, { kindOf, mediaRe, poolDir, onAdd, importInto,
       fold,
       h("span", { class: "ve-dim", text: `${fs.length} file${fs.length === 1 ? "" : "s"}` }),
       h("span", { class: "ve-gap" }),
-      tab === "reuse" ? h("button", { class: "link-btn", title: root, onclick: () => app.reveal(cat ? `${root}/${cat}` : root) }, "Open the folder") : null);
+      tab === "reuse" ? h("button", { class: "link-btn", title: root, onclick: () => app.reveal(cat ? `${root}/${cat}` : root) }, "Open the folder") : "");
   }
   function paint() { paintTabs(); paintList(); }
   // the list's empty space: the folder it shows

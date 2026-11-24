@@ -10,7 +10,7 @@
 // before is a chip that adds its last entry again. The log is fit.json next
 // to the other data files; the pure parts live in fit.js.
 
-import { h, dayKey, parseDay, addDays, fmtDay, localIso, uuid, debounce } from "./util.js";
+import { h, dayKey, parseDay, addDays, fmtDay, localIso, uuid, debounce, TOUCH } from "./util.js";
 import { icon } from "./icons.js";
 import { menu, askDialog, confirmDialog, inlineEdit, sortable } from "./ui.js";
 import { XP } from "./stats.js";
@@ -34,11 +34,13 @@ export function mountFit(app, el) {
   // ── frame ──
   const sub = h("div", { class: "vh-sub" });
   const dayLabel = h("button", { class: "fit-daylabel", title: "Pick a day", onclick: (e) => pickDay(e.currentTarget) });
+  // back to today: only when another day is showing - on today the label already says "Today"
+  const toToday = h("button", { class: "btn", onclick: () => { day = dayKey(); render(); } }, "Today");
   const nav = h("div", { class: "fit-nav" },
     h("button", { class: "icon-btn", title: "The day before", onclick: () => { day = dayKey(addDays(parseDay(day), -1)); render(); } }, icon("back")),
     dayLabel,
     h("button", { class: "icon-btn", title: "The day after", onclick: () => { day = dayKey(addDays(parseDay(day), 1)); render(); } }, icon("forward")),
-    h("button", { class: "btn", onclick: () => { day = dayKey(); render(); } }, "Today"));
+    toToday);
   const tabs = h("div", { class: "segmented" }, TABS.map(([id, name, ic]) => h("button", { class: "seg", dataset: { id }, onclick: () => { tab = id; render(); if (id !== "fasting") input.focus(); } }, icon(ic), name)));
   const input = h("input", { class: "qa-input", spellcheck: false });
   const mic = voiceButton({ cls: "icon-btn fit-mic", title: "Say what you did - “ten push-ups, twenty squats and a 5 km run”, “bench sixty kilo five reps”", onText: (said) => { input.value = said; if (submit(said, { said: true })) input.value = ""; else app.toast(`Heard “${said}” - no exercise in it`, { ms: 3500 }); } });
@@ -717,12 +719,13 @@ export function mountFit(app, el) {
   setInterval(() => { if (!el.hidden && tab === "fasting" && repaintTimer) repaintTimer(); }, 30000);
 
   // ── render ──
-  const placeholder = () => { input.placeholder = tab === "workout" ? "10 pushups · bench 60 kg x 5 · run 5 km 28 min" : "2 eggs 150 kcal · banana · coffee"; };
+  const placeholder = () => { input.placeholder = tab === "workout" ? (TOUCH ? "10 pushups · run 5 km 28 min" : "10 pushups · bench 60 kg x 5 · run 5 km 28 min") : "2 eggs 150 kcal · banana · coffee"; };
   function render() {
     if (el.hidden) { stale = true; return; }
     if (!data) return;
     stale = false;
     for (const b of tabs.children) b.classList.toggle("is-active", b.dataset.id === tab);
+    toToday.hidden = day === dayKey();
     dayLabel.textContent = day === dayKey() ? "Today" : fmtDay(parseDay(day), { weekday: "short", day: "numeric", month: "short" });
     qa.hidden = tab === "fasting" || tab === "program";
     restBar.hidden = tab !== "workout";

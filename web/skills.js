@@ -432,7 +432,7 @@ export function createSkills(app) {
             h("button", { class: "btn btn-primary", disabled: !!sk.errors.length, onclick: async () => { await runAsking(sk); paint(); } }, icon("play"), "Run")),
           sk.errors.length ? h("div", { class: "sk-err", text: sk.errors.join(" · ") }) : null,
           logEl);
-      }) : [h("div", { class: "sk-empty", text: "No skills yet. A skill is a note with type: skill and numbered steps - make one and it shows here." })]));
+      }) : [h("div", { class: "skl-empty", text: "No skills yet. A skill is a note with type: skill and numbered steps - make one and it shows here." })]));
     };
     paint();
     return paint;

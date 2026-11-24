@@ -758,7 +758,7 @@ export async function mountBoard(el, text, opts = {}) {
         const name = basename(String(n.file || "")).replace(/\.md$/i, "");
         const found = name && resolveLink(name, boardPath);
         c.body.replaceChildren(h("p", { class: "bc-placeholder", text: "This note is not in the vault. It may have been moved or deleted." }),
-          found && found !== n.file ? h("button", { class: "chip-btn", title: found, onclick: (e) => { e.stopPropagation(); edit(() => { const cur = byId.get(n.id); if (cur) cur.file = found; }); fillStatic(c); markStale(c); } }, `Found at ${found.replace(/\.md$/i, "")} - point the card there`) : null);
+          found && found !== n.file ? h("button", { class: "chip-btn", title: found, onclick: (e) => { e.stopPropagation(); edit(() => { const cur = byId.get(n.id); if (cur) cur.file = found; }); fillStatic(c); markStale(c); } }, `Found at ${found.replace(/\.md$/i, "")} - point the card there`) : "");
         return;
       }
       const sec = M.sectionOf(note.content, n.subpath);

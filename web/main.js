@@ -282,6 +282,7 @@ async function start() {
       case "headingStyle": root.dataset.headings = resolveHeadingStyle(S.headingStyle); break;
       case "headingSize": root.dataset.headingSize = resolveHeadingSize(S.headingSize); break;
       case "highlightStyle": root.dataset.highlight = S.highlightStyle === "flat" ? "flat" : "marker"; break;
+      case "taskPrio": root.dataset.taskPrio = S.taskPrio || "plain"; break;
       case "sidebarWidth": root.style.setProperty("--sidebar-w", clamp(S.sidebarWidth, 190, 440) + "px"); break;
       case "rightPanelWidth": root.style.setProperty("--right-w", clamp(Number(S.rightPanelWidth) || 276, 220, 560) + "px"); break;
       case "sidebar": $("#app").classList.toggle("no-sidebar", !S.sidebar); break;
@@ -374,7 +375,7 @@ async function start() {
     saveSettings();
   };
   let editor = null;
-  for (const k of ["theme", "motion", "accent", "fontSize", "lineWidth", "editorFont", "headingStyle", "headingSize", "sidebarWidth", "sidebar", "rightPanel", "tabMinWidth", "tabGap", "activeTabColor", "treeFontSize", "treeRowHeight", "treeFolderWeight", "imageInvertDark"]) applySetting(k);
+  for (const k of ["theme", "motion", "accent", "fontSize", "lineWidth", "editorFont", "headingStyle", "headingSize", "taskPrio", "sidebarWidth", "sidebar", "rightPanel", "tabMinWidth", "tabGap", "activeTabColor", "treeFontSize", "treeRowHeight", "treeFolderWeight", "imageInvertDark"]) applySetting(k);
 
   // remembered caret + scroll per note, like Obsidian's remember-cursor-position
   const savePositions = debounce(() => host.savePositions(app.positions).catch(() => {}), 1500);
@@ -6317,7 +6318,13 @@ async function start() {
     const sheetEl = h("div", { class: "phone-sheet", role: "dialog", "aria-label": "More views" },
       MORE.map(([view, ic, name]) => h("button", { class: "phone-sheet-btn", dataset: { view }, onclick: () => { sheet(false); app.openView(view); } }, h("span", { class: "phone-sheet-ico" }, icon(ic)), h("span", { text: name }))));
     const sheetScrim = h("div", { class: "phone-sheet-scrim", onclick: () => sheet(false) });
-    const sheet = (open) => { sheetEl.classList.toggle("is-open", open); sheetScrim.classList.toggle("is-open", open); sheetEl.inert = !open; paint(); };
+    const sheet = (open) => {
+      sheetEl.classList.toggle("is-open", open); sheetScrim.classList.toggle("is-open", open); sheetEl.inert = !open;
+      // a message that pops up meanwhile sits above the open sheet instead of over its buttons
+      document.documentElement.classList.toggle("phone-sheet-open", open);
+      if (open) document.documentElement.style.setProperty("--phone-sheet-h", sheetEl.offsetHeight + "px");
+      paint();
+    };
     sheetEl.inert = true;
     root.append(sheetScrim, sheetEl);
     // the top bar says where you are, and search sits at its right end

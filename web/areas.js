@@ -3,7 +3,7 @@
 // ([{id, title, notes, subtasks:[{id,text,done}]}], array order = rank).
 // Tasks belong to an area through a `focus_id` field on the task.
 
-import { h, uuid, debounce, dayKey } from "./util.js";
+import { h, uuid, debounce, dayKey, TOUCH } from "./util.js";
 import { icon } from "./icons.js";
 import { taskMenu } from "./taskmenu.js";
 import { inlineEdit, menu, sortable } from "./ui.js";
@@ -287,7 +287,7 @@ export function mountAreas(app, el) {
       return trow;
     });
 
-    const taskAdd = inputOn(h("input", { class: "sub-add", placeholder: `Add a task to ${a.title}…   !h @tomorrow`, spellcheck: false, dataset: { focusKey: a.id + ":task" } }), (v) => {
+    const taskAdd = inputOn(h("input", { class: "sub-add", placeholder: TOUCH ? `Add a task to ${a.title}…` : `Add a task to ${a.title}…   !h @tomorrow`, spellcheck: false, dataset: { focusKey: a.id + ":task" } }), (v) => {
       const p = parseQuickAdd(v, new Date(), (s) => A.find(s));
       if (p.text) app.tasks.create(p.text, { priority: p.priority || "none", due_date: p.due_date, start_date: p.start_date, focus_id: p.focus_id || a.id });
     });

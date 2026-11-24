@@ -1,7 +1,7 @@
 // Home: today at a glance. Due tasks, habits, today's note, recent notes and
 // what your agents have been doing.
 
-import { h, dayKey, relTime, debounce, parseDay, uuid } from "./util.js";
+import { h, dayKey, relTime, debounce, parseDay, uuid, TOUCH } from "./util.js";
 import { sortable } from "./ui.js";
 import { icon } from "./icons.js";
 import { excerpt } from "./mdparse.js";
@@ -64,7 +64,7 @@ export function mountHome(app, el) {
   function setKind(k) {
     kind = k;
     kindBtn.replaceChildren(icon(k === "task" ? "checkSquare" : "calendar"), k === "task" ? "Task" : "Today's note");
-    capInput.placeholder = k === "task" ? "What needs doing?   !h  @tomorrow  ^fri" : "Jot something into today's note…";
+    capInput.placeholder = k === "task" ? (TOUCH ? "What needs doing?" : "What needs doing?   !h  @tomorrow  ^fri") : "Jot something into today's note…";
   }
   setKind("task");
   kindBtn.addEventListener("click", () => { setKind(kind === "task" ? "note" : "task"); capInput.focus(); });

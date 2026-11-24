@@ -291,7 +291,7 @@ export function mountFileView(app, el) {
       app.host.paintInspect(path).then((info) => {
         if (current !== path || !info) return;
         card.replaceChildren(
-          info.thumb ? h("img", { class: "fv-paint-thumb", src: `data:image/png;base64,${info.thumb}`, alt: name }) : null,
+          info.thumb ? h("img", { class: "fv-paint-thumb", src: `data:image/png;base64,${info.thumb}`, alt: name }) : "",
           h("div", { class: "fv-paint-meta", text: `${info.width} × ${info.height} · ${info.layers} layer${info.layers === 1 ? "" : "s"} · ${fmtSize(info.bytes)}` }),
           h("div", { class: "fv-loading", text: "Opening…" }));
       }).catch(() => {});
@@ -805,7 +805,7 @@ export function archivePanel(app, abs, { name, here = null, openInApp, alive = (
     // a long list draws its first 600; the words narrow it
     rows = files.slice(0, 600).map(row);
     list.replaceChildren(...(rows.length ? rows : [h("div", { class: "trash-none", text: all.length ? "Nothing of that name or kind" : "The archive is empty" })]),
-      files.length > 600 ? h("div", { class: "trash-none", text: `and ${files.length - 600} more - find them by name` }) : null);
+      files.length > 600 ? h("div", { class: "trash-none", text: `and ${files.length - 600} more - find them by name` }) : "");
   }
   app.host.archiveList(abs).then((entries) => {
     if (!alive()) return;

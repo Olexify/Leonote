@@ -4,7 +4,7 @@
 // its things beside the grid, where a task can be added on that day, ticked
 // off or given its menu; a task dragged onto another day moves its due date.
 
-import { h, dayKey, parseDay, addDays, fmtDay, debounce, motionFull, pressable } from "./util.js";
+import { h, dayKey, parseDay, addDays, fmtDay, debounce, motionFull, pressable, TOUCH } from "./util.js";
 import { icon } from "./icons.js";
 import { askDialog } from "./ui.js";
 import * as R from "./recurring.js";
@@ -295,7 +295,7 @@ export function mountCalendar(app, el) {
   }
 
   // ── the day's list ──
-  const quick = h("input", { class: "cal-quick", placeholder: "Add a task on this day…   !h  ^tomorrow", spellcheck: false });
+  const quick = h("input", { class: "cal-quick", placeholder: TOUCH ? "Add a task on this day…" : "Add a task on this day…   !h  ^tomorrow", spellcheck: false });
   quick.addEventListener("keydown", (e) => {
     e.stopPropagation();
     if (e.key === "Escape") quick.blur();
@@ -413,8 +413,8 @@ export function mountCalendar(app, el) {
       h("div", { class: "cal-agenda-head" }, h("h2", { text: hits.length ? `${hits.length} found` : "Nothing found" }),
         h("button", { class: "link-btn", onclick: () => { find.value = ""; renderAgenda(lastBy.get(sel) || []); } }, "Clear")),
       hits.length ? h("div", { class: "cal-rows cal-found-list" }, list) : h("div", { class: "cal-empty", text: "Nothing with those words on the calendar." }),
-      hits.length > 200 ? h("div", { class: "cal-empty", text: `The first 200 of ${hits.length} - a word more narrows it.` }) : null,
-      more);
+      hits.length > 200 ? h("div", { class: "cal-empty", text: `The first 200 of ${hits.length} - a word more narrows it.` }) : "",
+      more || ""); // a null child would print "null"
     // the next one coming up, in view
     requestAnimationFrame(() => agenda.querySelector(".cal-found.is-next")?.scrollIntoView({ block: "nearest" }));
   }

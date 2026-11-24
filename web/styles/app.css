@@ -127,6 +127,8 @@ body {
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: default; display: inline-flex; align-items: center; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 input, textarea { font: inherit; color: inherit; user-select: text; }
+/* a hint (or text) too long for its box ends in "…" instead of being cut mid-word */
+input { text-overflow: ellipsis; }
 kbd {
   display: inline-block; font: 500 10.5px/1 var(--mono); padding: 3px 5px; border-radius: 5px;
   border: 1px solid var(--line-strong); border-bottom-width: 2px; color: var(--text-3); background: var(--surface-2); white-space: nowrap;
@@ -358,6 +360,10 @@ body.is-resizing, body.is-resizing * { cursor: col-resize !important; user-selec
   height: 26px; flex: none; display: flex; align-items: center; gap: 14px; padding: 0 10px 0 14px;
   font-size: 11.5px; color: var(--text-3); border-top: 1px solid var(--line); background: var(--bg); font-variant-numeric: tabular-nums;
 }
+/* each part keeps one line; when the bar is short of room the file name and the word count give way, ending in "…"
+   ("94 words · 1 min read" and "Live preview" broke onto two lines in a small window) */
+.statusbar > * { white-space: nowrap; flex: none; }
+.statusbar > .sb-path, .statusbar > .sb-info { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .sb-spacer { flex: 1; }
 .sb-save { display: inline-flex; align-items: center; gap: 6px; }
 .sb-save::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); opacity: 0.8; }
@@ -597,6 +603,12 @@ body.no-code-numbers .cm-line.cm-codeblock[data-n]::before { display: none; }
 .rightpanel { width: 276px; flex: none; border-left: 1px solid var(--line); background: var(--bg); overflow-y: auto; padding: 12px 10px 24px; }
 .rp-empty { color: var(--text-3); text-align: center; padding: 48px 18px; }
 .rp-empty .ico { width: 26px; height: 26px; color: var(--text-4); }
+/* beside a view (no note open) with sections under it, the "open a note" line is a small note at the top, not a
+   big empty state pushing them halfway down */
+.rp-empty:has(+ *) { padding: 6px 12px 4px; text-align: left; font-size: 12px; color: var(--text-4); }
+.rp-empty:has(+ *) { display: flex; align-items: center; gap: 8px; }
+.rp-empty:has(+ *) .ico { width: 15px; height: 15px; flex: none; }
+.rp-empty:has(+ *) p { margin: 0; }
 .rp-sec { margin-bottom: 10px; }
 .rp-head { width: 100%; height: 28px; gap: 5px; padding: 0 6px; border-radius: 6px; color: var(--text-4); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .rp-head:hover { color: var(--text-2); }
@@ -612,6 +624,9 @@ body.no-code-numbers .cm-line.cm-codeblock[data-n]::before { display: none; }
 .rp-outline-item.is-cur { color: var(--text); border-left-color: var(--accent); }
 .rp-outline-item.l2 { padding-left: 18px; } .rp-outline-item.l3 { padding-left: 28px; } .rp-outline-item.l4, .rp-outline-item.l5, .rp-outline-item.l6 { padding-left: 38px; }
 .rp-links { display: flex; flex-direction: column; gap: 4px; }
+/* the Copy buttons in a column stretched to the full width and read as empty text boxes: their own size, at the start */
+.rp-outline > .chip-btn, .rp-links > .chip-btn { align-self: flex-start; }
+.rp-outline > .chip-btn { margin: 6px 0 2px 8px; }
 .rp-link { border-radius: 8px; padding: 4px; }
 .rp-link-title { width: 100%; gap: 7px; padding: 4px; border-radius: 6px; font-weight: 500; color: var(--text-2); font-size: 13px; }
 .rp-link-title .ico { width: 14px; height: 14px; color: var(--text-4); }
@@ -655,6 +670,9 @@ body.no-code-numbers .cm-line.cm-codeblock[data-n]::before { display: none; }
 /* ── views: shared ───────────────────────────────────────────────────────── */
 .view-inner { max-width: 880px; margin: 0 auto; padding: 44px 40px 90px; }
 .vh { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+/* the title on the left, everything else together at the right - with three or more parts, space-between had
+   stranded a middle one (the Tasks "put in order" button) halfway across */
+.vh > :first-child { margin-right: auto; }
 .vh-title { font-size: 27px; font-weight: 700; letter-spacing: -0.024em; margin: 0; line-height: 1.15; }
 .vh-sub { color: var(--text-3); margin-top: 5px; font-size: 13px; }
 
@@ -728,8 +746,33 @@ body.no-code-numbers .cm-line.cm-codeblock[data-n]::before { display: none; }
 .task-check:hover { border-color: var(--accent); }
 .task-check:hover .ico { opacity: 0.55; transform: none; color: var(--accent); }
 .task-check:active { transform: scale(0.88); }
-.p-high > .task-check { border-color: color-mix(in srgb, var(--p-high) 70%, transparent); }
-.p-medium > .task-check { border-color: color-mix(in srgb, var(--p-medium) 70%, transparent); }
+/* priority: a ring in its colour around a soft wash of it, and at the row's edge a line that starts beside the
+   circle in full colour and fades out down the row - tall like the old bar, but belonging to the circle */
+.task.p-high { --pc: var(--p-high); } .task.p-medium { --pc: var(--p-medium); } .task.p-low { --pc: var(--p-low); }
+.task.p-high::before, .task.p-medium::before, .task.p-low::before {
+  top: 8px; bottom: 8px; width: 3px; left: 2px; border-radius: 3px; /* the same gap above and below, any row height */
+  background: linear-gradient(to bottom, var(--pc) 0%, var(--pc) 30%, color-mix(in srgb, var(--pc) 15%, transparent) 100%); /* by share, so a one-line row fades too */
+}
+.is-phone .task.p-high::before, .is-phone .task.p-medium::before, .is-phone .task.p-low::before { left: 0; top: 6px; bottom: 6px; }
+/* a soft wash of the priority colour from the left (a background-image, so hover and focus still show), and the
+   no line by default; Settings › Appearance › Task priority adds one (root data-task-prio) */
+.task.p-high, .task.p-medium, .task.p-low { background-image: linear-gradient(90deg, color-mix(in srgb, var(--pc) 13%, transparent), transparent 45%); }
+.task.p-high::before, .task.p-medium::before, .task.p-low::before { box-shadow: 0 0 8px color-mix(in srgb, var(--pc) 55%, transparent); }
+[data-task-prio="fade"] .task::before { box-shadow: none; }
+[data-task-prio="plain"] .task::before { display: none; } /* the default: the colour lives in the wash and the circle */
+[data-task-prio="edge"] .task:is(.p-high, .p-medium, .p-low)::before { left: 0; top: 0; bottom: 0; border-radius: 10px 0 0 10px; box-shadow: none;
+  background: linear-gradient(var(--pc), color-mix(in srgb, var(--pc) 0%, transparent)); }
+[data-task-prio="corner"] .task:is(.p-high, .p-medium, .p-low)::before { left: 0; top: 8px; bottom: 0; border-radius: 3px 0 0 0; background: var(--pc); box-shadow: none; opacity: .9; }
+[data-task-prio="corner"] .task:is(.p-high, .p-medium, .p-low)::after { content: ""; position: absolute; left: 0; bottom: 0; height: 1.5px; width: 60%;
+  border-radius: 0 0 0 10px; background: linear-gradient(90deg, var(--pc), transparent); opacity: .9; }
+[data-task-prio="underline"] .task::before { box-shadow: none; }
+[data-task-prio="underline"] .task:is(.p-high, .p-medium, .p-low)::after { content: ""; position: absolute; left: 10px; right: 40%; bottom: 0; height: 1px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pc) 70%, transparent), transparent); }
+[data-task-prio="thick"] .task:is(.p-high, .p-medium, .p-low)::before { width: 5px; left: 1px; opacity: .6; box-shadow: none; }
+.p-high > .task-check { border-color: var(--p-high); background: color-mix(in srgb, var(--p-high) 16%, transparent); }
+.p-medium > .task-check { border-color: var(--p-medium); background: color-mix(in srgb, var(--p-medium) 16%, transparent); }
+.p-low > .task-check { border-color: var(--p-low); background: color-mix(in srgb, var(--p-low) 16%, transparent); }
+.p-high > .task-check, .p-medium > .task-check, .p-low > .task-check { border-width: 1.8px; }
 .is-done > .task-check { background: var(--accent); border-color: var(--accent); }
 .is-done > .task-check .ico { opacity: 1; transform: none; color: var(--accent-fg); }
 .task-body { flex: 1; min-width: 0; }
@@ -791,7 +834,8 @@ body.no-code-numbers .cm-line.cm-codeblock[data-n]::before { display: none; }
 .cap-input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font-size: 15px; height: 100%; }
 .home-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 .home-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-@media (max-width: 960px) { .home-grid { grid-template-columns: minmax(0, 1fr); } .home-stats { display: none; } }
+/* one column when the view itself is narrow (a sidebar and the right panel take the room too), not only a small screen */
+@container main (max-width: 700px) { .home-grid { grid-template-columns: minmax(0, 1fr); } .home-stats { display: none; } }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 13px 16px 16px; }
 .card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; min-height: 24px; }
 .card-head .ico { color: var(--text-3); }
@@ -860,6 +904,9 @@ body.no-code-numbers .cm-line.cm-codeblock[data-n]::before { display: none; }
 .heat-cell.l2 { background: color-mix(in srgb, var(--accent) 48%, transparent); }
 .heat-cell.l3 { background: color-mix(in srgb, var(--accent) 72%, transparent); }
 .heat-cell.l4 { background: var(--accent); }
+/* a phone: the 20 weeks fill the card's width, each day a square (the fixed 12 px left a strip of it empty) */
+.is-phone .heat { grid-template-rows: repeat(7, auto); grid-auto-columns: minmax(0, 1fr); overflow: visible; }
+.is-phone .heat-cell { aspect-ratio: 1; }
 
 /* ── settings ────────────────────────────────────────────────────────────── */
 .settings-view { max-width: 760px; }
@@ -911,6 +958,13 @@ body.no-code-numbers .cm-line.cm-codeblock[data-n]::before { display: none; }
    what the rules up in the editor section hang off. */
 .set-row.is-stack { flex-direction: column; align-items: stretch; gap: 12px; }
 .set-row.is-stack .set-ctl { flex: 1 1 auto; }
+/* a narrow view (a small window, or the sidebar and right panel open): each control goes under its label, full width,
+   so a row of choices keeps one line ("Compact Normal / Large" had split) and labels do not shrink to a few words */
+@container main (max-width: 640px) {
+  .set-row:not(.is-fold) { flex-direction: column; align-items: stretch; gap: 10px; }
+  .set-row:not(.is-fold) > .set-ctl { max-width: none; align-self: flex-start; }
+}
+.swatch-more { white-space: nowrap; }
 .hs-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 10px; }
 .hs-card {
   display: flex; flex-direction: column; align-items: stretch; justify-content: space-between; gap: 0; padding: 0; overflow: hidden;
@@ -965,7 +1019,7 @@ textarea.input { padding: 8px 10px; line-height: 1.45; resize: vertical; }
 .btn-primary:hover { background: color-mix(in srgb, var(--accent) 88%, white); }
 .focus-view { max-width: 980px; }
 .focus-top { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; margin-bottom: 16px; }
-@media (max-width: 900px) { .focus-top { grid-template-columns: minmax(0, 1fr); } }
+@container main (max-width: 660px) { .focus-top { grid-template-columns: minmax(0, 1fr); } }
 .pomo-card { display: flex; flex-direction: column; align-items: center; padding: 26px 18px 18px; }
 .pomo-face { position: relative; width: 250px; height: 250px; --phase: var(--accent); }
 .pomo-face.is-break { --phase: var(--ok); }
@@ -985,6 +1039,8 @@ textarea.input { padding: 8px 10px; line-height: 1.45; resize: vertical; }
 .step-val { min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; }
 .step-unit { color: var(--text-4); font-size: 12px; }
 .pomo-opt { display: flex; align-items: center; gap: 9px; color: var(--text-2); font-size: 13px; }
+/* the switches each take a full row: two to a row squeezed "Start and break sounds" onto two lines */
+.pomo-settings > .pomo-opt { grid-column: 1 / -1; }
 .focus-side { display: flex; flex-direction: column; gap: 16px; }
 .level-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
 .level-top { display: flex; align-items: center; gap: 14px; }
@@ -1042,7 +1098,7 @@ textarea.input { padding: 8px 10px; line-height: 1.45; resize: vertical; }
 .area-sub { color: var(--text-3); font-size: 12px; margin-top: 1px; }
 .area-caret { color: var(--text-4); transition: transform 0.15s var(--ease); }
 .area-card.is-collapsed .area-caret { transform: rotate(-90deg); }
-.area-notes { margin: 10px 0 2px 40px; padding: 3px 6px; border-radius: 6px; color: var(--text-2); white-space: pre-wrap; font-size: 13.5px; line-height: 1.5; }
+.area-notes { margin: 10px 0 2px 34px; padding: 3px 6px; /* its words line up with TASKS and STEPS under it; the hover box reaches out */ border-radius: 6px; color: var(--text-2); white-space: pre-wrap; font-size: 13.5px; line-height: 1.5; }
 .area-notes.is-empty { color: var(--text-4); }
 .area-notes:hover { background: var(--hover); }
 .area-block { margin: 12px 0 0 40px; }
@@ -1694,6 +1750,8 @@ textarea.input { padding: 8px 10px; line-height: 1.45; resize: vertical; }
 .ribbon .sb-label { display: none; }
 .ribbon .sb-badge { position: absolute; top: 1px; right: 0; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; font-size: 9px; line-height: 14px; text-align: center; background: var(--surface-2); color: var(--text-2); box-shadow: 0 0 0 1.5px var(--bg-2); }
 .ribbon .sb-badge:empty { display: none; }
+/* a badge wider than a digit ("1/3" habits done) grew leftwards over its own icon: it sits on the corner, outside it */
+.ribbon .sb-badge { top: -3px; right: -1px; font-size: 8.5px; padding: 0 2px; }
 .ribbon-foot { margin-top: auto; padding-top: 6px; }
 .has-ribbon .tb-left { width: calc(var(--sidebar-w) + var(--ribbon-w) - 14px); }
 .has-ribbon.no-sidebar .tb-left { width: auto; }
@@ -1854,9 +1912,10 @@ textarea.input { padding: 8px 10px; line-height: 1.45; resize: vertical; }
 .pal-input:focus-visible, .emoji-search:focus-visible, .fp-hex:focus-visible, .gx-input:focus-visible, .key-test:focus-visible { outline: none; }
 
 /* quick switcher: kind filters */
-.pal-filters { display: flex; flex-wrap: wrap; gap: 4px; padding: 7px 12px; border-bottom: 1px solid var(--line); }
+.pal-filters { display: flex; flex-wrap: wrap; gap: 4px; padding: 7px 10px; border-bottom: 1px solid var(--line); }
 .pal-filters[hidden] { display: none; }
-.pal-filter { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 999px; font-size: 11.5px; color: var(--text-3); box-shadow: inset 0 0 0 1px var(--line); }
+/* 7 px a side so the eight file kinds fit one row (at 9 the last one, Media, wrapped onto a row of its own) */
+.pal-filter { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 7px; border-radius: 999px; font-size: 11.5px; color: var(--text-3); box-shadow: inset 0 0 0 1px var(--line); }
 .pal-filter .ico { width: 13px; height: 13px; }
 .pal-filter:hover { color: var(--text); background: var(--hover); }
 .pal-filter.is-on { color: var(--text); background: var(--accent-wash); box-shadow: inset 0 0 0 1px var(--accent-soft); }
@@ -3623,6 +3682,8 @@ body:has(.dlg-back) .menu { z-index: 97; }
 .cal[data-when] .cal-cell:not(.is-other):hover { background: color-mix(in srgb, var(--wc) calc(9% + var(--far, 0) * 6%), transparent); }
 .cal[data-when] .cal-title { color: color-mix(in srgb, var(--wc) calc(35% + var(--far, 0) * 45%), var(--text)); }
 .cal[data-when] .cal-head { box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--wc) calc(40% + var(--far, 0) * 40%), transparent); }
+/* a little air between the filters and the coloured line under them (it touched their bottoms) */
+.cal[data-when] .cal-head { padding-bottom: 10px; }
 .cal-legend { display: flex; gap: 6px; flex-wrap: wrap; }
 .cal-legend .chip-btn { display: inline-flex; align-items: center; gap: 5px; }
 .cal-legend .chip-btn .ico { width: 12px; height: 12px; }
@@ -3677,7 +3738,9 @@ body:has(.dlg-back) .menu { z-index: 97; }
 .cal-add-ev { align-self: flex-start; padding: 4px 9px; }
 .set-stack { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
 .set-stack .set-inline { margin: 0; }
-@media (max-width: 980px) { .cal-body { grid-template-columns: 1fr; } .cal-agenda { position: static; } }
+/* the day's list goes under the month when the view (not the screen) is narrow: beside a sidebar and the right panel,
+   a 1440 px window left each day 60 px and every entry read "Ba…" */
+@container main (max-width: 1000px) { .cal-body { grid-template-columns: 1fr; } .cal-agenda { position: static; } .cal-body .cal-scroll { max-height: max(300px, calc(100vh - 420px)); } }
 
 /* ── Workout, food, fasting ───────────────────────────────────────────── */
 .fit { max-width: 1240px; display: flex; flex-direction: column; gap: 14px; }
@@ -3732,7 +3795,7 @@ body:has(.dlg-back) .menu { z-index: 97; }
 .fit-timer-n { font-size: 44px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
 .fit-timer-sub { color: var(--text-3); margin-top: 6px; font-size: 13px; }
 .fit-empty { padding: 20px 4px; }
-@media (max-width: 900px) { .fit-body { grid-template-columns: 1fr; } }
+@container main (max-width: 700px) { .fit-body { grid-template-columns: 1fr; } }
 
 /* ── the program: plan card and book ── */
 .fit-plan .card-head { flex-wrap: wrap; }
@@ -3926,7 +3989,13 @@ body:has(.dlg-back) .menu { z-index: 97; }
 /* ── breaking a habit ─────────────────────────────────────────────────── */
 .qt-slot { margin: 18px 0; }
 .qt-card-wrap .card-head { display: flex; align-items: center; gap: 8px; }
-.qt-sub { margin-left: auto; font-size: 12px; color: var(--text-4); }
+.qt-sub { margin-left: 4px; font-size: 12px; color: var(--text-4); } /* follows its heading; wrapped, it starts under it */
+/* a phone: the hint goes under the title instead of squeezing it into two words a line */
+.is-phone .qt-card-wrap .card-head { flex-wrap: wrap; row-gap: 2px; }
+.is-phone .qt-sub { flex-basis: 100%; margin-left: 0; }
+/* a phone: any card heading keeps its line; what stands beside it (a range switch, a hint) moves to the next line instead of squeezing it */
+.card-head { flex-wrap: wrap; row-gap: 8px; } /* any narrow card, a small window too - wraps only when it must */
+.card-head > h2 { white-space: nowrap; }
 .qt-add { margin: 4px 0 12px; }
 .qt-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
 .qt-card { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 14px; background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--line); }
@@ -4324,7 +4393,7 @@ body:has(.dlg-back) .menu { z-index: 97; }
 .sk-log summary { cursor: pointer; color: var(--text-4); }
 .sk-log-line { font-family: var(--font-mono, ui-monospace, monospace); padding-left: 12px; }
 .sk-log-line.is-bad { color: #e5484d; }
-.sk-empty { padding: 30px 10px; text-align: center; color: var(--text-4); }
+.skl-empty { padding: 30px 10px; text-align: center; color: var(--text-4); }
 
 /* the AI box (Ctrl+Shift+A, and at the top of the AI home) */
 .aq { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -4762,6 +4831,9 @@ button.aih-row:hover { background: var(--hover); color: var(--text); }
 .rp-tag-x { width: 15px; height: 15px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; opacity: .55; } .rp-tag-x:hover { opacity: 1; background: var(--hover); } .rp-tag-x .ico { width: 10px; height: 10px; }
 .rp-tag-add { width: 110px; height: 22px; padding: 0 8px; border-radius: 11px; border: 1px dashed var(--line-strong, var(--line)); background: transparent; color: var(--text); font: inherit; font-size: 12px; outline: none; } .rp-tag-add:focus { border-style: solid; border-color: var(--accent); }
 .crumb-id { margin-left: 6px; padding: 0 4px; border-radius: 4px; font-size: 9.5px; letter-spacing: .04em; line-height: 14px; color: var(--text-4); opacity: .55; box-shadow: inset 0 0 0 1px var(--line); cursor: default; } .crumb-id:hover { opacity: 1; }
+/* a phone: a finger has no hover, so the id badge only puzzled; a path row with nothing else in it goes too */
+.is-phone .crumb-id { display: none; }
+.is-phone .crumbs:not(:has(> :not(.crumb-id))) { display: none; }
 /* a field to tag a note with: suggestions and the vault's tags under it */
 .tag-field { display: inline-flex; flex-direction: column; gap: 3px; min-width: 150px; max-width: 100%; }
 .tag-field-input { width: 150px; height: 22px; padding: 0 8px; border-radius: 11px; border: 1px dashed var(--line-strong, var(--line)); background: transparent; color: var(--text); font: inherit; font-size: 12px; outline: none; } .tag-field-input:focus { border-style: solid; border-color: var(--accent); }
@@ -4906,6 +4978,22 @@ canvas { font-feature-settings: normal; }
 .cal-title:hover { background: var(--hover); }
 .cal-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .cal-find { width: 220px; }
+/* a phone: the search spans the width, the filters are one row you swipe */
+.is-phone .cal-tools { width: 100%; }
+.is-phone .cal-find { width: 100%; }
+.is-phone .cal-legend { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; width: 100%; }
+.is-phone .cal-legend > * { flex: none; }
+.is-phone .cal-head { padding-bottom: 10px; row-gap: 10px; }
+/* a phone month: a day too narrow for words shows its things as coloured dots (the colours of their kinds), the
+   cells half as tall; a tap picks the day and its list below says what they are - as phone calendars do */
+.is-phone .cal-cell { min-height: 58px; padding: 4px 2px; align-items: center; }
+.is-phone .cal-items { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 3px; }
+.is-phone .cal-item { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; background: var(--c); pointer-events: none; }
+.is-phone .cal-item > * { display: none; }
+.is-phone .cal-more { padding: 0; font-size: 10px; }
+.is-phone .cal-dow > div { padding: 8px 0; text-align: center; }
+.is-phone .cal-scroll { max-height: 352px; } /* six weeks, so the picked day's list shows under it */
+.is-phone .cal-mon { display: none; } /* "Nov" beside the 1 did not fit a phone's cell; the month is named above */
 .cal-pick { position: fixed; z-index: 90; width: 260px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
 .cal-pick-head { display: flex; align-items: center; justify-content: space-between; }
 .cal-pick-head b { font-size: 15px; }
@@ -4950,8 +5038,12 @@ canvas { font-feature-settings: normal; }
 .editor-host .cm-editor.sel-native .cm-content .cm-line ::selection, .editor-host .cm-editor.sel-native .cm-content .cm-line::selection { background: var(--accent-soft) !important; }
 
 /* search results by kind: a web page blue, a picture or a sheet green... - a thin edge in the kind's colour */
-.pal-item.is-tinted { box-shadow: inset 2px 0 0 color-mix(in srgb, var(--pal-tint) 70%, transparent); }
-.pal-item.is-tinted .pal-sub { color: color-mix(in srgb, var(--pal-tint) 45%, var(--text-4)); }
+/* a coloured result (a file kind on this PC, a tinted folder's note): the colour lives in a small rounded tile behind
+   its icon, and the path under it stays a quiet grey - the coloured edge on every rounded row read as brackets */
+.pal-item.is-tinted > .ico { box-sizing: content-box; width: 15px; height: 15px; padding: 6px; border-radius: 8px; flex: none;
+  color: var(--pal-tint); background: color-mix(in srgb, var(--pal-tint) 15%, transparent); }
+.pal-item.is-tinted .pal-sub { color: var(--text-3); font-size: 11.5px; }
+.pal-item.is-tinted { padding-block: 6px; }
 
 /* "[" typed: the small offer of a link (editor.js bracketTip) */
 .cm-tooltip.cm-bracket-tip, .cm-bracket-tip { display: flex; gap: 2px; padding: 3px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line-strong); box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
@@ -5127,6 +5219,12 @@ canvas { font-feature-settings: normal; }
 .set-quick-more .ico { width: 14px; height: 14px; transform: rotate(-90deg); transition: transform var(--dur-2) var(--ease); }
 .set-quick-more.is-open .ico { transform: none; }
 .set-quick-all { margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); display: grid; gap: 6px; }
+/* a phone: the category cards below are the same list - the chips only doubled it; "All groups" stays */
+.is-phone .set-quick-cat { display: none; }
+.is-phone .set-quick { margin: -6px 0 6px; }
+/* the desktop too: seven chips naming the seven cards right under them said everything twice */
+.set-quick-cat { display: none; }
+.set-quick { margin: -6px 0 8px; }
 .set-quick-all[hidden] { display: none; }
 .set-quick-all.is-opening { animation: set-open var(--dur-3) var(--ease) both; }
 .set-quick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
@@ -5170,6 +5268,9 @@ canvas { font-feature-settings: normal; }
 
 /* Breaks that move you (deskbreak.js): the Timer's card and the corner card of one break */
 .db-panel { margin-bottom: 16px; }
+/* the heading keeps its line; the four switches follow it and wrap as whole switches, never word by word */
+.db-panel > .card-head { flex-wrap: wrap; row-gap: 8px; column-gap: 14px; }
+.db-panel > .card-head h2, .db-panel > .card-head .pomo-opt { white-space: nowrap; }
 .db-opts { display: grid; gap: 10px; margin-bottom: 14px; }
 .db-opt, .db-today { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .db-today { justify-content: space-between; border-top: 1px solid var(--line); padding-top: 12px; margin-bottom: 6px; }
@@ -5240,10 +5341,21 @@ body:has(#app.is-compact) #corner-cards > .cc { width: auto; max-width: none; }
 /* a finger has no hover: the controls that only showed on hover stay visible */
 .is-phone .task-acts { opacity: 1; }
 html.is-phone #toasts { left: 8px; right: 8px; transform: none; bottom: calc(58px + env(safe-area-inset-bottom) + 8px); }
+html.is-phone.phone-sheet-open #toasts { bottom: calc(58px + env(safe-area-inset-bottom) + var(--phone-sheet-h, 260px) + 8px); }
+/* a phone: every message is the same full width (a snackbar), its button at the right end */
+html.is-phone #toasts { align-items: stretch; }
+html.is-phone .toast { max-width: none; }
+html.is-phone .toast-text { flex: 1; min-width: 0; }
 @media (prefers-reduced-motion: reduce) { .is-phone .sidebar { transition: none; } }
 /* the phone, continued: no slide at startup, no keyboard hints, the formatting bar while typing */
 .phone-still .sidebar { transition: none !important; }
 html.is-phone kbd:not(.cm-content kbd), html.is-phone .pal-hint, html.is-phone .pal-mode[data-m="pc"], .is-phone [data-cmd="toggle-sidebar"] { display: none !important; }
+/* a phone: search opens right under the top bar, like a phone search; the kinds are one swipe row */
+html.is-phone .pal-back { padding-top: calc(env(safe-area-inset-top) + 56px); }
+html.is-phone .pal { width: calc(100vw - 16px); }
+html.is-phone .pal-filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+html.is-phone .pal-filters > * { flex: none; }
+html.is-phone .pal-list { max-height: calc(100vh - 250px); }
 .phone-fmt { display: none; }
 .is-phone.is-typing .phone-nav { display: none; }
 .is-phone.is-typing .phone-fmt { display: flex; position: fixed; z-index: 61; left: 0; right: 0; bottom: 0; height: calc(48px + env(safe-area-inset-bottom));
@@ -5299,3 +5411,16 @@ html.is-phone kbd:not(.cm-content kbd), html.is-phone .pal-hint, html.is-phone .
 .dlg.upd-critical { border: 1px solid color-mix(in srgb, var(--danger) 55%, transparent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 18%, transparent), 0 24px 60px -12px rgba(0, 0, 0, 0.6); }
 .dlg.upd-critical .dlg-title { color: var(--danger); display: flex; align-items: center; gap: 8px; }
 .ph-drawer { flex-wrap: wrap; justify-content: center; } /* more tabs than room (a narrow window): a second row, never a tab cut off */
+
+/* a checkbox inside a button-like label (About › Update automatically) in the app's own colour, centred on its words;
+   the mail link under the donations in the accent like the app's other links, not the browser's purple */
+label.btn:has(> input[type="checkbox"]) { display: inline-flex; align-items: center; gap: 7px; }
+label.btn > input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; margin: 0; flex: none; }
+.about-sub a { color: var(--accent); text-decoration: none; }
+.about-sub a:hover { text-decoration: underline; }
+
+/* filter chips in the views are one kind: 26 px, fully round - Docs' categories were 30 px, the Calendar's filters
+   24 px with square-ish corners, the Phone view's 24 px; side by side across views they looked like three things */
+.cal-legend .chip-btn { height: 26px; border-radius: 13px; padding: 0 11px; }
+.dx-cat { height: 26px; border-radius: 13px; padding: 0 11px; font-size: 12.5px; }
+.ph-chips .ve-chip { height: 26px; border-radius: 13px; padding: 0 10px; font-size: 12px; }
